@@ -10,6 +10,9 @@ const DEFAULT_SETTINGS = {
   preferredLevel: 'all',
 };
 
+const AUTH_STORAGE_KEY = 'oxford3000-auth-user-v1';
+const GOOGLE_EVENT_NAME = 'google-identity-loaded';
+
 const LEVEL_LABELS = [
   { value: 'all', label: 'Все уровни' },
   { value: 'A1', label: 'A1' },
@@ -34,15 +37,11 @@ const formatter = new Intl.NumberFormat('ru-RU');
 
 let cards = [];
 let filteredCards = [];
-let progress = {
-  cards: {},
-  meta: {
-    lastReviewDay: null,
-    reviewsToday: 0,
-    newToday: 0,
-  },
-};
+let progress = createEmptyProgress();
 let settings = { ...DEFAULT_SETTINGS };
+
+let currentUser = null;
+let googleInitialized = false;
 
 const state = {
   mode: 'en-ru',
@@ -62,8 +61,28 @@ function getTodayKey() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function createEmptyProgress() {
+  return {
+    cards: {},
+    meta: {
+      lastReviewDay: getTodayKey(),
+      reviewsToday: 0,
+      newToday: 0,
+    },
+  };
+}
+
+function getProgressStorageKey() {
+  if (currentUser?.sub) {
+    return `${STORAGE_KEY}::${currentUser.sub}`;
+  }
+  return STORAGE_KEY;
+}
+
 function loadProgress() {
-  const raw = localStorage.getItem(STORAGE_KEY);
+  const key = getProgressStorageKey();
+  const raw = localStorage.getItem(key);
+  progress = createEmptyProgress();
   if (raw) {
     try {
       const stored = JSON.parse(raw);
@@ -83,7 +102,8 @@ function loadProgress() {
 }
 
 function saveProgress() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+  const key = getProgressStorageKey();
+  localStorage.setItem(key, JSON.stringify(progress));
 }
 
 function loadSettings() {
@@ -119,6 +139,10 @@ function applyTheme(theme) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  if (googleInitialized) {
+    renderGoogleButton();
+    updateAuthUI();
   }
 }
 
@@ -512,19 +536,187 @@ function handleSettingsChange(event) {
 
 function resetProgress() {
   if (!confirm('Удалить прогресс и начать заново?')) return;
-  localStorage.removeItem(STORAGE_KEY);
-  progress = {
-    cards: {},
-    meta: {
-      lastReviewDay: getTodayKey(),
-      reviewsToday: 0,
-      newToday: 0,
-    },
-  };
+  localStorage.removeItem(getProgressStorageKey());
+  progress = createEmptyProgress();
+  saveProgress();
   state.history = [];
   renderHistory();
   buildQueues();
   showNextCard();
+}
+
+function getGoogleClientId() {
+  const meta = document.querySelector('meta[name="google-signin-client-id"]');
+  const value = meta?.content?.trim();
+  return value || null;
+}
+
+function decodeJwtPayload(token) {
+  try {
+    const payload = token.split('.')[1];
+    if (!payload) return null;
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
+    const decoded = atob(padded);
+    const json = decodeURIComponent(
+      decoded
+        .split('')
+        .map((char) => `%${`00${char.charCodeAt(0).toString(16)}`.slice(-2)}`)
+        .join(''),
+    );
+    return JSON.parse(json);
+  } catch (error) {
+    console.warn('Failed to decode Google credential', error);
+    return null;
+  }
+}
+
+function updateAuthUI() {
+  if (!elements.authSignedIn || !elements.authSignedOut) return;
+  const signedIn = Boolean(currentUser);
+  elements.authSignedIn.classList.toggle('hidden', !signedIn);
+  elements.authSignedOut.classList.toggle('hidden', signedIn);
+  if (signedIn) {
+    const displayName = currentUser.name || currentUser.email || 'Пользователь';
+    if (elements.authName) {
+      elements.authName.textContent = displayName;
+    }
+    if (elements.authAvatar) {
+      if (currentUser.picture) {
+        elements.authAvatar.src = currentUser.picture;
+        elements.authAvatar.classList.remove('hidden');
+      } else {
+        elements.authAvatar.removeAttribute('src');
+        elements.authAvatar.classList.add('hidden');
+      }
+    }
+  } else {
+    if (elements.authName) {
+      elements.authName.textContent = '';
+    }
+    if (elements.authAvatar) {
+      elements.authAvatar.removeAttribute('src');
+      elements.authAvatar.classList.add('hidden');
+    }
+    if (googleInitialized && window.google?.accounts?.id) {
+      window.google.accounts.id.prompt();
+    }
+  }
+}
+
+function handleUserChange() {
+  loadProgress();
+  state.history = [];
+  renderHistory();
+  if (cards.length) {
+    buildQueues();
+    showNextCard();
+  }
+}
+
+function setCurrentUser(user) {
+  const previousId = currentUser?.sub || null;
+  currentUser = user;
+  if (user) {
+    const payload = {
+      sub: user.sub,
+      name: user.name,
+      email: user.email,
+      picture: user.picture,
+    };
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(payload));
+  } else {
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+  }
+  updateAuthUI();
+  const nextId = currentUser?.sub || null;
+  if (previousId !== nextId) {
+    handleUserChange();
+  }
+}
+
+function handleCredentialResponse(response) {
+  if (!response?.credential) return;
+  const payload = decodeJwtPayload(response.credential);
+  if (!payload?.sub) return;
+  setCurrentUser({
+    sub: payload.sub,
+    name: payload.name,
+    email: payload.email,
+    picture: payload.picture,
+  });
+}
+
+function renderGoogleButton() {
+  if (!elements.authSignedOut || !window.google?.accounts?.id) return;
+  elements.authSignedOut.innerHTML = '';
+  window.google.accounts.id.renderButton(elements.authSignedOut, {
+    theme: document.documentElement.dataset.theme === 'dark' ? 'filled_black' : 'outline',
+    size: 'medium',
+    type: 'standard',
+    text: 'signin_with',
+    shape: 'pill',
+  });
+}
+
+function setupGoogleSignIn() {
+  const clientId = getGoogleClientId();
+  if (!clientId || !elements.authSignedOut) return;
+  if (!window.google?.accounts?.id) return;
+
+  if (!googleInitialized) {
+    window.google.accounts.id.initialize({
+      client_id: clientId,
+      callback: handleCredentialResponse,
+      auto_select: false,
+      cancel_on_tap_outside: true,
+    });
+    googleInitialized = true;
+  }
+
+  renderGoogleButton();
+  updateAuthUI();
+  if (!currentUser) {
+    window.google.accounts.id.prompt();
+  }
+}
+
+function signOut() {
+  if (window.google?.accounts?.id) {
+    window.google.accounts.id.disableAutoSelect();
+  }
+  setCurrentUser(null);
+}
+
+function initAuth() {
+  try {
+    const stored = localStorage.getItem(AUTH_STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (parsed?.sub) {
+        currentUser = parsed;
+      }
+    }
+  } catch (error) {
+    console.warn('Failed to parse stored user', error);
+  }
+
+  loadProgress();
+  updateAuthUI();
+
+  const clientId = getGoogleClientId();
+  if (!clientId) {
+    if (elements.authSignedOut) {
+      elements.authSignedOut.innerHTML =
+        '<span class="auth-hint">Добавьте Google Client ID в index.html, чтобы включить вход через Google</span>';
+    }
+    return;
+  }
+
+  window.addEventListener(GOOGLE_EVENT_NAME, setupGoogleSignIn, { once: false });
+  if (window.google?.accounts?.id) {
+    setupGoogleSignIn();
+  }
 }
 
 function initUI() {
@@ -552,6 +744,11 @@ function initUI() {
   elements.settingsPanel = document.getElementById('settings-panel');
   elements.settingsToggle = document.getElementById('toggle-settings');
   elements.resetButton = document.getElementById('reset-progress');
+  elements.authSignedIn = document.getElementById('auth-signed-in');
+  elements.authSignedOut = document.getElementById('auth-signed-out');
+  elements.authAvatar = document.getElementById('auth-avatar');
+  elements.authName = document.getElementById('auth-name');
+  elements.authSignOut = document.getElementById('auth-signout');
 
   const settingsForm = document.getElementById('settings-form');
   settingsForm.dailyNewLimit.value = settings.dailyNewLimit;
@@ -587,6 +784,9 @@ function initUI() {
   elements.resetButton.addEventListener('click', resetProgress);
   settingsForm.addEventListener('input', handleSettingsChange);
   settingsForm.addEventListener('change', handleSettingsChange);
+  if (elements.authSignOut) {
+    elements.authSignOut.addEventListener('click', signOut);
+  }
 
   document.addEventListener('keydown', (event) => {
     if (event.target && ['INPUT', 'TEXTAREA'].includes(event.target.tagName)) {
@@ -625,11 +825,11 @@ function initUI() {
 }
 
 async function bootstrap() {
-  const response = await fetch(DATA_URL);
-  cards = await response.json();
-  loadProgress();
   loadSettings();
   initUI();
+  initAuth();
+  const response = await fetch(DATA_URL);
+  cards = await response.json();
   buildQueues();
   showNextCard();
 }
