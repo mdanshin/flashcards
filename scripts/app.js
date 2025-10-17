@@ -217,13 +217,14 @@ function renderCard() {
     audioControls.innerHTML = '';
     elements.showAnswer.classList.add('hidden');
     elements.actionsContainer.classList.add('disabled');
+    elements.actionsContainer.classList.add('hidden');
     back.classList.add('hidden');
     return;
   }
 
   elements.showAnswer.classList.toggle('hidden', state.showingAnswer);
   elements.actionsContainer.classList.toggle('hidden', !state.showingAnswer);
-  elements.actionsContainer.classList.toggle('disabled', false);
+  elements.actionsContainer.classList.toggle('disabled', !state.showingAnswer);
 
   const level = card.level ? card.level.toUpperCase() : null;
   const parts = (card.pos || []).join(', ');
@@ -572,8 +573,7 @@ function initUI() {
   elements.levelSelect.addEventListener('change', handleLevelChange);
 
   elements.showAnswer.addEventListener('click', () => {
-    state.showingAnswer = true;
-    renderCard();
+    revealAnswer();
   });
 
   elements.actionsContainer.querySelectorAll('button[data-grade]').forEach((button) => {
