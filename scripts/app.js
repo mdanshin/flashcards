@@ -132,6 +132,17 @@ function saveSettings() {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
 }
 
+function showAuthMessage(message) {
+  if (!elements.authMessage) return;
+  if (!message) {
+    elements.authMessage.textContent = '';
+    elements.authMessage.classList.add('hidden');
+    return;
+  }
+  elements.authMessage.textContent = message;
+  elements.authMessage.classList.remove('hidden');
+}
+
 function applyTheme(theme) {
   const root = document.documentElement;
   root.removeAttribute('data-theme');
