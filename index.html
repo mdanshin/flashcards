@@ -8,6 +8,7 @@
       name="description"
       content="Интерактивный тренажёр по словарю The Oxford 3000 с переводами на русский, озвучкой и алгоритмом интервальных повторений."
     />
+    <meta name="google-signin-client-id" content="" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -23,6 +24,18 @@
       <div class="header-controls">
         <button id="toggle-settings" class="ghost">Настройки</button>
         <button id="reset-progress" class="danger">Сбросить прогресс</button>
+        <div class="auth-controls">
+          <div id="auth-signed-in" class="auth-user hidden">
+            <img id="auth-avatar" alt="" class="auth-avatar hidden" />
+            <span id="auth-name" class="auth-name"></span>
+            <button id="auth-signout" type="button" class="ghost small">Выйти</button>
+          </div>
+          <div id="auth-signed-out" class="auth-signin">
+            <button id="auth-signin-button" type="button" class="primary small">Войти через Google</button>
+            <div id="google-button-container" class="google-button-container"></div>
+            <p id="auth-message" class="auth-hint hidden"></p>
+          </div>
+        </div>
       </div>
     </header>
 
@@ -129,6 +142,12 @@
       </main>
     </div>
 
+    <script
+      src="https://accounts.google.com/gsi/client"
+      async
+      defer
+      onload="window.dispatchEvent(new Event('google-identity-loaded'))"
+    ></script>
     <script type="module" src="scripts/app.js"></script>
   </body>
 </html>
