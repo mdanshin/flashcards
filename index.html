@@ -3,21 +3,132 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Flashcards Hello World</title>
+    <title>Oxford 3000 — карточки для изучения английского</title>
+    <meta
+      name="description"
+      content="Интерактивный тренажёр по словарю The Oxford 3000 с переводами на русский, озвучкой и алгоритмом интервальных повторений."
+    />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <main class="page">
-      <h1>Привет, GitHub Pages!</h1>
-      <p>Этот проект демонстрирует минимальный сайт, который можно опубликовать через GitHub Pages.</p>
-      <section class="steps">
-        <h2>Как опубликовать</h2>
-        <ol>
-          <li>Создайте новый репозиторий на GitHub и загрузите в него эти файлы.</li>
-          <li>В настройках репозитория включите GitHub Pages, выбрав ветку <code>main</code> и папку <code>/ (root)</code>.</li>
-          <li>Подождите несколько минут — сайт будет доступен по адресу <code>https://&lt;ваш_логин&gt;.github.io/&lt;имя_репозитория&gt;/</code>.</li>
-        </ol>
-      </section>
-    </main>
+    <header class="app-header">
+      <div class="header-text">
+        <h1>The Oxford 3000 Flashcards</h1>
+        <p>
+          Прокачайте словарный запас по одной из самых авторитетных подборок английских слов.
+          Карточки используют алгоритм, вдохновлённый Anki: интервальные повторения, управление новыми
+          карточками и учёт прогресса прямо в браузере.
+        </p>
+      </div>
+      <div class="header-controls">
+        <button id="toggle-settings" class="ghost">Настройки</button>
+        <button id="reset-progress" class="danger">Сбросить прогресс</button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <section class="panel">
+          <h2>Направление</h2>
+          <div class="mode-toggle">
+            <button type="button" data-mode="en-ru" class="active">EN → RU</button>
+            <button type="button" data-mode="ru-en">RU → EN</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Фильтр по уровню</h2>
+          <label class="field">
+            <span>CEFR уровень</span>
+            <select id="level-filter"></select>
+          </label>
+        </section>
+
+        <section class="panel stats">
+          <h2>Статистика</h2>
+          <ul>
+            <li><span class="stat-label">К повторению:</span> <span id="stats-due" class="stat-value">0</span></li>
+            <li><span class="stat-label">Новых осталось:</span> <span id="stats-new" class="stat-value">0</span></li>
+            <li><span class="stat-label">За сегодня:</span> <span id="stats-studied" class="stat-value">0</span></li>
+            <li><span class="stat-label">Всего в колоде:</span> <span id="stats-total" class="stat-value">0</span></li>
+            <li><span class="stat-label">Ближайшая карточка:</span> <span id="next-due" class="stat-value">—</span></li>
+          </ul>
+        </section>
+
+        <section class="panel">
+          <h2>Поиск</h2>
+          <input id="search-input" type="search" placeholder="Название или перевод" autocomplete="off" />
+          <div id="search-results" class="search-results"></div>
+        </section>
+
+        <section class="panel settings" id="settings-panel">
+          <h2>Настройки</h2>
+          <form id="settings-form">
+            <label class="field">
+              <span>Новых карточек в день</span>
+              <input type="number" min="1" max="200" name="dailyNewLimit" />
+            </label>
+            <label class="field">
+              <span>Интервал после ошибки, минут</span>
+              <input type="number" min="1" max="120" name="lapseMinutes" />
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" name="autoplayAudio" /> Автовоспроизведение озвучки
+            </label>
+            <label class="field">
+              <span>Тема интерфейса</span>
+              <select name="theme">
+                <option value="system">Как в системе</option>
+                <option value="light">Светлая</option>
+                <option value="dark">Тёмная</option>
+              </select>
+            </label>
+          </form>
+          <p class="hint">
+            Прогресс хранится только локально в браузере. Чтобы начать заново, используйте кнопку «Сбросить прогресс».
+          </p>
+        </section>
+      </aside>
+
+      <main class="study-area">
+        <section class="card" id="card">
+          <div class="card-face front" id="card-front">
+            <div class="card-meta">
+              <div id="meta-badges" class="badges"></div>
+              <div id="front-meta" class="meta"></div>
+            </div>
+            <div class="card-content">
+              <div id="front-title" class="prompt"></div>
+              <div class="card-message">Нажмите «Показать ответ» или клавишу <kbd>Пробел</kbd></div>
+            </div>
+            <div class="card-footer">
+              <button id="show-answer" class="primary">Показать ответ</button>
+            </div>
+          </div>
+          <div class="card-face back hidden" id="card-back">
+            <div class="card-back-header">
+              <h2 id="back-title"></h2>
+              <div id="audio-controls" class="audio-controls"></div>
+            </div>
+            <ul id="translation-list" class="translation"></ul>
+            <div class="sources" id="sources"></div>
+          </div>
+        </section>
+
+        <div class="actions" id="answer-actions">
+          <button type="button" class="again" data-grade="0">Снова<br /><span>1</span></button>
+          <button type="button" class="hard" data-grade="1">Трудно<br /><span>2</span></button>
+          <button type="button" class="good" data-grade="2">Хорошо<br /><span>3</span></button>
+          <button type="button" class="easy" data-grade="3">Легко<br /><span>4</span></button>
+        </div>
+
+        <section class="panel history">
+          <h2>История сессии</h2>
+          <ul id="session-history"></ul>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="scripts/app.js"></script>
   </body>
 </html>
