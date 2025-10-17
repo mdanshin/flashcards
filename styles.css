@@ -1,0 +1,75 @@
+:root {
+  color-scheme: light dark;
+  font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  line-height: 1.6;
+  background-color: #f8f9fb;
+  color: #1f2933;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  min-height: 100vh;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+}
+
+.page {
+  max-width: 540px;
+  background-color: rgba(255, 255, 255, 0.85);
+  border-radius: 18px;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.15);
+  padding: 2.5rem;
+  backdrop-filter: blur(12px);
+}
+
+h1 {
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+p {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+}
+
+.steps {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(147, 197, 253, 0.24));
+  border-radius: 14px;
+  padding: 1.5rem 1.75rem;
+}
+
+.steps h2 {
+  margin-top: 0;
+  font-size: 1.25rem;
+}
+
+ol {
+  padding-left: 1.25rem;
+  margin: 0;
+}
+
+code {
+  background-color: rgba(15, 23, 42, 0.08);
+  border-radius: 6px;
+  padding: 0.1rem 0.4rem;
+  font-size: 0.95em;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    background-color: #0f172a;
+    color: #e2e8f0;
+  }
+
+  .page {
+    background-color: rgba(15, 23, 42, 0.85);
+    box-shadow: 0 20px 45px rgba(15, 23, 42, 0.45);
+  }
+
+  code {
+    background-color: rgba(226, 232, 240, 0.16);
+  }
+}
