@@ -1,6 +1,8 @@
 const DATA_URL = 'data/cards.json';
 const STORAGE_KEY = 'oxford3000-progress-v1';
 const SETTINGS_KEY = 'oxford3000-settings-v1';
+const API_BASE_URL = '/api';
+const PROGRESS_ENDPOINT = `${API_BASE_URL}/progress`;
 const DEFAULT_SETTINGS = {
   dailyNewLimit: 20,
   lapseMinutes: 10,
@@ -41,7 +43,9 @@ let progress = createEmptyProgress();
 let settings = { ...DEFAULT_SETTINGS };
 
 let currentUser = null;
+let currentIdToken = null;
 let googleInitialized = false;
+let saveDebounceTimer = null;
 
 const state = {
   mode: 'en-ru',
@@ -79,7 +83,15 @@ function getProgressStorageKey() {
   return STORAGE_KEY;
 }
 
-function loadProgress() {
+function isSignedIn() {
+  return Boolean(currentUser?.sub);
+}
+
+function hasAuthToken() {
+  return Boolean(currentIdToken);
+}
+
+function loadProgressFromLocalStorage() {
   const key = getProgressStorageKey();
   const raw = localStorage.getItem(key);
   progress = createEmptyProgress();
@@ -93,17 +105,148 @@ function loadProgress() {
       console.warn('Failed to parse progress, resetting', err);
     }
   }
+}
+
+function saveProgressToLocalStorage() {
+  const key = getProgressStorageKey();
+  localStorage.setItem(key, JSON.stringify(progress));
+}
+
+function ensureProgressForToday() {
   const today = getTodayKey();
+  if (!progress.meta) {
+    progress.meta = {
+      lastReviewDay: today,
+      reviewsToday: 0,
+      newToday: 0,
+    };
+  }
   if (progress.meta.lastReviewDay !== today) {
     progress.meta.lastReviewDay = today;
     progress.meta.reviewsToday = 0;
     progress.meta.newToday = 0;
   }
+  if (!progress.cards || typeof progress.cards !== 'object') {
+    progress.cards = {};
+  }
 }
 
-function saveProgress() {
-  const key = getProgressStorageKey();
-  localStorage.setItem(key, JSON.stringify(progress));
+async function loadProgress() {
+  const fallbackProgress = (() => {
+    try {
+      return JSON.parse(JSON.stringify(progress));
+    } catch (error) {
+      return createEmptyProgress();
+    }
+  })();
+  const fallbackHistory = Array.isArray(state.history) ? [...state.history] : [];
+
+  progress = createEmptyProgress();
+  state.history = [];
+
+  if (isSignedIn() && hasAuthToken()) {
+    try {
+      const response = await fetch(PROGRESS_ENDPOINT, {
+        headers: {
+          Authorization: `Bearer ${currentIdToken}`,
+        },
+        cache: 'no-store',
+      });
+      if (response.status === 401) {
+        currentIdToken = null;
+        throw new Error('Unauthorized');
+      }
+      if (response.ok) {
+        const payload = await response.json();
+        if (payload?.progress?.cards && payload?.progress?.meta) {
+          progress = payload.progress;
+        }
+        if (Array.isArray(payload?.history)) {
+          state.history = payload.history.slice(0, 100);
+        }
+        localStorage.removeItem(getProgressStorageKey());
+        showAuthMessage('');
+      } else if (response.status !== 404) {
+        throw new Error(`Unexpected status ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Failed to load progress from server', error);
+      if (currentUser?.sub && !currentIdToken) {
+        showAuthMessage('Сессия истекла, войдите через Google заново');
+        if (window.google?.accounts?.id) {
+          window.google.accounts.id.prompt();
+        }
+      } else {
+        showAuthMessage('Не удалось загрузить прогресс с сервера, данные не синхронизированы');
+      }
+      progress = fallbackProgress?.cards ? fallbackProgress : createEmptyProgress();
+      state.history = fallbackHistory;
+    }
+  } else if (isSignedIn()) {
+    showAuthMessage('Ожидаем подтверждение Google, прогресс будет загружен');
+    progress = fallbackProgress?.cards ? fallbackProgress : createEmptyProgress();
+    state.history = fallbackHistory;
+  } else {
+    loadProgressFromLocalStorage();
+    showAuthMessage('');
+  }
+
+  ensureProgressForToday();
+  state.history = state.history.slice(0, 12);
+  renderHistory();
+}
+
+async function persistProgress() {
+  if (isSignedIn()) {
+    if (!hasAuthToken()) {
+      showAuthMessage('Войдите через Google, чтобы синхронизировать прогресс');
+      return;
+    }
+    try {
+      const response = await fetch(PROGRESS_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${currentIdToken}`,
+        },
+        body: JSON.stringify({
+          progress,
+          history: state.history,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(`Unexpected status ${response.status}`);
+      }
+      showAuthMessage('');
+    } catch (error) {
+      console.error('Failed to save progress to server', error);
+      showAuthMessage('Не удалось синхронизировать прогресс с сервером');
+      throw error;
+    }
+  } else {
+    saveProgressToLocalStorage();
+  }
+}
+
+function saveProgress(options = {}) {
+  const { immediate = false } = options;
+  if (immediate) {
+    if (saveDebounceTimer) {
+      clearTimeout(saveDebounceTimer);
+      saveDebounceTimer = null;
+    }
+    return persistProgress();
+  }
+
+  if (saveDebounceTimer) {
+    clearTimeout(saveDebounceTimer);
+  }
+  saveDebounceTimer = setTimeout(() => {
+    saveDebounceTimer = null;
+    persistProgress().catch((error) => console.error('Delayed save failed', error));
+  }, 400);
+
+  return Promise.resolve();
 }
 
 function loadSettings() {
@@ -545,13 +688,33 @@ function handleSettingsChange(event) {
   }
 }
 
-function resetProgress() {
+async function resetProgress() {
   if (!confirm('Удалить прогресс и начать заново?')) return;
-  localStorage.removeItem(getProgressStorageKey());
+
+  try {
+    if (isSignedIn()) {
+      const response = await fetch(PROGRESS_ENDPOINT, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${currentIdToken}`,
+        },
+      });
+      if (!response.ok && response.status !== 404) {
+        throw new Error(`Unexpected status ${response.status}`);
+      }
+      showAuthMessage('');
+    } else {
+      localStorage.removeItem(getProgressStorageKey());
+    }
+  } catch (error) {
+    console.error('Failed to reset progress on server', error);
+    showAuthMessage('Не удалось очистить данные на сервере');
+  }
+
   progress = createEmptyProgress();
-  saveProgress();
   state.history = [];
   renderHistory();
+  saveProgress({ immediate: true }).catch((error) => console.error('Failed to persist reset', error));
   buildQueues();
   showNextCard();
 }
@@ -615,17 +778,15 @@ function updateAuthUI() {
   }
 }
 
-function handleUserChange() {
-  loadProgress();
-  state.history = [];
-  renderHistory();
+async function handleUserChange() {
+  await loadProgress();
   if (cards.length) {
     buildQueues();
     showNextCard();
   }
 }
 
-function setCurrentUser(user) {
+function setCurrentUser(user, { forceReload = false } = {}) {
   const previousId = currentUser?.sub || null;
   currentUser = user;
   if (user) {
@@ -641,8 +802,8 @@ function setCurrentUser(user) {
   }
   updateAuthUI();
   const nextId = currentUser?.sub || null;
-  if (previousId !== nextId) {
-    handleUserChange();
+  if (previousId !== nextId || forceReload) {
+    handleUserChange().catch((error) => console.error('Failed to refresh user state', error));
   }
 }
 
@@ -650,12 +811,14 @@ function handleCredentialResponse(response) {
   if (!response?.credential) return;
   const payload = decodeJwtPayload(response.credential);
   if (!payload?.sub) return;
+  const forceReload = currentUser?.sub === payload.sub;
+  currentIdToken = response.credential;
   setCurrentUser({
     sub: payload.sub,
     name: payload.name,
     email: payload.email,
     picture: payload.picture,
-  });
+  }, { forceReload });
 }
 
 function renderGoogleButton() {
@@ -696,10 +859,11 @@ function signOut() {
   if (window.google?.accounts?.id) {
     window.google.accounts.id.disableAutoSelect();
   }
+  currentIdToken = null;
   setCurrentUser(null);
 }
 
-function initAuth() {
+async function initAuth() {
   try {
     const stored = localStorage.getItem(AUTH_STORAGE_KEY);
     if (stored) {
@@ -712,7 +876,7 @@ function initAuth() {
     console.warn('Failed to parse stored user', error);
   }
 
-  loadProgress();
+  await loadProgress();
   updateAuthUI();
 
   const clientId = getGoogleClientId();
@@ -760,6 +924,7 @@ function initUI() {
   elements.authAvatar = document.getElementById('auth-avatar');
   elements.authName = document.getElementById('auth-name');
   elements.authSignOut = document.getElementById('auth-signout');
+  elements.authMessage = document.getElementById('auth-message');
 
   const settingsForm = document.getElementById('settings-form');
   settingsForm.dailyNewLimit.value = settings.dailyNewLimit;
@@ -792,7 +957,9 @@ function initUI() {
   elements.settingsToggle.addEventListener('click', () => {
     elements.settingsPanel.classList.toggle('open');
   });
-  elements.resetButton.addEventListener('click', resetProgress);
+  elements.resetButton.addEventListener('click', () => {
+    resetProgress().catch((error) => console.error('Failed to reset progress', error));
+  });
   settingsForm.addEventListener('input', handleSettingsChange);
   settingsForm.addEventListener('change', handleSettingsChange);
   if (elements.authSignOut) {
@@ -838,7 +1005,7 @@ function initUI() {
 async function bootstrap() {
   loadSettings();
   initUI();
-  initAuth();
+  await initAuth();
   const response = await fetch(DATA_URL);
   cards = await response.json();
   buildQueues();

@@ -115,6 +115,14 @@ body::before {
   min-width: 220px;
 }
 
+.auth-message {
+  flex: 1 1 100%;
+  text-align: right;
+  font-size: 0.8rem;
+  color: var(--danger);
+  min-height: 1.2rem;
+}
+
 .auth-controls button {
   flex: 0 0 auto;
 }
