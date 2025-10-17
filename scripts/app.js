@@ -659,20 +659,15 @@ function handleCredentialResponse(response) {
 }
 
 function renderGoogleButton() {
-  if (!elements.googleButtonContainer || !window.google?.accounts?.id) return;
-  elements.googleButtonContainer.innerHTML = '';
-  window.google.accounts.id.renderButton(elements.googleButtonContainer, {
+  if (!elements.authSignedOut || !window.google?.accounts?.id) return;
+  elements.authSignedOut.innerHTML = '';
+  window.google.accounts.id.renderButton(elements.authSignedOut, {
     theme: document.documentElement.dataset.theme === 'dark' ? 'filled_black' : 'outline',
     size: 'medium',
     type: 'standard',
     text: 'signin_with',
     shape: 'pill',
   });
-  if (elements.authSignInButton) {
-    elements.authSignInButton.classList.add('hidden');
-    elements.authSignInButton.disabled = false;
-  }
-  showAuthMessage('');
 }
 
 function setupGoogleSignIn() {
@@ -695,25 +690,6 @@ function setupGoogleSignIn() {
   if (!currentUser) {
     window.google.accounts.id.prompt();
   }
-}
-
-function handleSignInClick() {
-  const clientId = getGoogleClientId();
-  if (!clientId) {
-    showAuthMessage('Чтобы включить вход через Google, добавьте Client ID в index.html.');
-    if (elements.authSignInButton) {
-      elements.authSignInButton.disabled = true;
-    }
-    return;
-  }
-
-  if (!window.google?.accounts?.id) {
-    showAuthMessage('Загружаем сервис Google… Попробуйте ещё раз через несколько секунд.');
-    return;
-  }
-
-  setupGoogleSignIn();
-  window.google.accounts.id.prompt();
 }
 
 function signOut() {
@@ -741,22 +717,12 @@ function initAuth() {
 
   const clientId = getGoogleClientId();
   if (!clientId) {
-    if (elements.authSignInButton) {
-      elements.authSignInButton.classList.remove('hidden');
-      elements.authSignInButton.disabled = true;
+    if (elements.authSignedOut) {
+      elements.authSignedOut.innerHTML =
+        '<span class="auth-hint">Добавьте Google Client ID в index.html, чтобы включить вход через Google</span>';
     }
-    if (elements.googleButtonContainer) {
-      elements.googleButtonContainer.innerHTML = '';
-    }
-    showAuthMessage('Добавьте Google Client ID в index.html, чтобы включить вход через Google.');
     return;
   }
-
-  if (elements.authSignInButton) {
-    elements.authSignInButton.disabled = false;
-    elements.authSignInButton.classList.remove('hidden');
-  }
-  showAuthMessage('');
 
   window.addEventListener(GOOGLE_EVENT_NAME, setupGoogleSignIn, { once: false });
   if (window.google?.accounts?.id) {
@@ -794,9 +760,6 @@ function initUI() {
   elements.authAvatar = document.getElementById('auth-avatar');
   elements.authName = document.getElementById('auth-name');
   elements.authSignOut = document.getElementById('auth-signout');
-  elements.authSignInButton = document.getElementById('auth-signin-button');
-  elements.googleButtonContainer = document.getElementById('google-button-container');
-  elements.authMessage = document.getElementById('auth-message');
 
   const settingsForm = document.getElementById('settings-form');
   settingsForm.dailyNewLimit.value = settings.dailyNewLimit;
@@ -834,9 +797,6 @@ function initUI() {
   settingsForm.addEventListener('change', handleSettingsChange);
   if (elements.authSignOut) {
     elements.authSignOut.addEventListener('click', signOut);
-  }
-  if (elements.authSignInButton) {
-    elements.authSignInButton.addEventListener('click', handleSignInClick);
   }
 
   document.addEventListener('keydown', (event) => {

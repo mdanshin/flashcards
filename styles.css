@@ -144,23 +144,8 @@ body::before {
 
 .auth-signin {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.5rem;
-}
-
-.auth-signin button {
-  align-self: flex-end;
-}
-
-.google-button-container {
-  display: flex;
+  align-items: center;
   justify-content: flex-end;
-  width: 100%;
-}
-
-.google-button-container:empty {
-  display: none;
 }
 
 .auth-hint {
@@ -168,15 +153,6 @@ body::before {
   color: var(--muted);
   text-align: right;
   line-height: 1.3;
-}
-
-.auth-hint.hidden {
-  display: none;
-}
-
-button.small {
-  padding: 0.55rem 1.2rem;
-  font-size: 0.85rem;
 }
 
 .ghost.small {
