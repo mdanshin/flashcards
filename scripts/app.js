@@ -94,17 +94,18 @@ function hasAuthToken() {
 function loadProgressFromLocalStorage() {
   const key = getProgressStorageKey();
   const raw = localStorage.getItem(key);
-  progress = createEmptyProgress();
-  if (raw) {
-    try {
-      const stored = JSON.parse(raw);
-      if (stored.cards && stored.meta) {
-        progress = stored;
-      }
-    } catch (err) {
-      console.warn('Failed to parse progress, resetting', err);
-    }
+  if (!raw) {
+    return null;
   }
+  try {
+    const stored = JSON.parse(raw);
+    if (stored.cards && stored.meta) {
+      return stored;
+    }
+  } catch (err) {
+    console.warn('Failed to parse progress, resetting', err);
+  }
+  return null;
 }
 
 function saveProgressToLocalStorage() {
@@ -140,6 +141,7 @@ async function loadProgress() {
     }
   })();
   const fallbackHistory = Array.isArray(state.history) ? [...state.history] : [];
+  const storedProgress = loadProgressFromLocalStorage();
 
   progress = createEmptyProgress();
   state.history = [];
@@ -164,30 +166,41 @@ async function loadProgress() {
         if (Array.isArray(payload?.history)) {
           state.history = payload.history.slice(0, 100);
         }
-        localStorage.removeItem(getProgressStorageKey());
+        saveProgressToLocalStorage();
         showAuthMessage('');
-      } else if (response.status !== 404) {
+      } else if (response.status === 404) {
+        const fallback = storedProgress || fallbackProgress;
+        progress = fallback?.cards ? fallback : createEmptyProgress();
+        state.history = fallbackHistory;
+        showAuthMessage('Сервер синхронизации недоступен, прогресс сохраняется локально');
+      } else {
         throw new Error(`Unexpected status ${response.status}`);
       }
     } catch (error) {
       console.error('Failed to load progress from server', error);
       if (currentUser?.sub && !currentIdToken) {
-        showAuthMessage('Сессия истекла, войдите через Google заново');
+        const fallback = storedProgress || fallbackProgress;
+        progress = fallback?.cards ? fallback : createEmptyProgress();
+        state.history = fallbackHistory;
+        showAuthMessage('Сессия истекла, прогресс сохранён локально. Войдите через Google заново');
         if (window.google?.accounts?.id) {
           window.google.accounts.id.prompt();
         }
       } else {
-        showAuthMessage('Не удалось загрузить прогресс с сервера, данные не синхронизированы');
+        const fallback = storedProgress || fallbackProgress;
+        progress = fallback?.cards ? fallback : createEmptyProgress();
+        state.history = fallbackHistory;
+        showAuthMessage('Не удалось загрузить прогресс с сервера, используется локальное сохранение');
       }
-      progress = fallbackProgress?.cards ? fallbackProgress : createEmptyProgress();
-      state.history = fallbackHistory;
     }
   } else if (isSignedIn()) {
     showAuthMessage('Ожидаем подтверждение Google, прогресс будет загружен');
-    progress = fallbackProgress?.cards ? fallbackProgress : createEmptyProgress();
+    const fallback = storedProgress || fallbackProgress;
+    progress = fallback?.cards ? fallback : createEmptyProgress();
     state.history = fallbackHistory;
   } else {
-    loadProgressFromLocalStorage();
+    const fallback = storedProgress;
+    progress = fallback?.cards ? fallback : createEmptyProgress();
     showAuthMessage('');
   }
 
@@ -199,6 +212,7 @@ async function loadProgress() {
 async function persistProgress() {
   if (isSignedIn()) {
     if (!hasAuthToken()) {
+      saveProgressToLocalStorage();
       showAuthMessage('Войдите через Google, чтобы синхронизировать прогресс');
       return;
     }
@@ -214,13 +228,28 @@ async function persistProgress() {
           history: state.history,
         }),
       });
+      if (response.status === 401) {
+        currentIdToken = null;
+        saveProgressToLocalStorage();
+        showAuthMessage('Сессия истекла, прогресс сохранён локально. Войдите через Google заново');
+        throw new Error('Unauthorized');
+      }
+      if (response.status === 404) {
+        saveProgressToLocalStorage();
+        showAuthMessage('Сервер синхронизации недоступен, прогресс сохраняется локально');
+        return;
+      }
       if (!response.ok) {
         throw new Error(`Unexpected status ${response.status}`);
       }
+      saveProgressToLocalStorage();
       showAuthMessage('');
     } catch (error) {
       console.error('Failed to save progress to server', error);
-      showAuthMessage('Не удалось синхронизировать прогресс с сервером');
+      if (error?.message !== 'Unauthorized') {
+        saveProgressToLocalStorage();
+        showAuthMessage('Не удалось синхронизировать прогресс с сервером, данные сохранены локально');
+      }
       throw error;
     }
   } else {
