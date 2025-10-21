@@ -322,17 +322,7 @@ async function handleManualGoogleSignIn() {
     await signInWithPopup(firebaseAuth, googleProvider);
   } catch (error) {
     console.error('Failed to sign in with Google popup', error);
-    let message = 'Не удалось войти через Google, попробуйте снова';
-    if (error?.code === 'auth/popup-blocked') {
-      message = 'Браузер заблокировал всплывающее окно Google. Разрешите всплывающие окна и попробуйте снова';
-    } else if (error?.code === 'auth/cancelled-popup-request') {
-      message = 'Предыдущая попытка входа ещё обрабатывается. Подождите несколько секунд и повторите попытку';
-    } else if (error?.code === 'auth/unauthorized-domain') {
-      message = 'Домен приложения не добавлен в список разрешённых в консоли Firebase. Обновите настройки Firebase и попробуйте снова';
-      googleButtonHint = 'Добавьте текущий домен в список авторизованных в Firebase Authentication';
-      renderGoogleButton();
-    }
-    showAuthMessage(message);
+    showAuthMessage('Не удалось войти через Google, попробуйте снова');
   }
 }
 
@@ -856,9 +846,7 @@ function renderGoogleButton() {
 
   container.innerHTML = '';
 
-  const shouldRenderGoogleButton = googleAvailable && !manualGoogleButtonVisible;
-
-  if (shouldRenderGoogleButton) {
+  if (googleAvailable) {
     const googleButtonContainer = document.createElement('div');
     googleButtonContainer.className = 'google-signin-button';
     container.appendChild(googleButtonContainer);
