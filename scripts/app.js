@@ -11,6 +11,7 @@ import {
   getAuth,
   GoogleAuthProvider,
   signInWithCredential,
+  signInWithPopup,
   signOut as firebaseSignOut,
   onAuthStateChanged,
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
@@ -28,6 +29,8 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const firestore = getFirestore(firebaseApp);
 const firebaseAuth = getAuth(firebaseApp);
+const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({ prompt: 'select_account' });
 
 const DATA_URL = 'data/cards.json';
 const STORAGE_KEY = 'oxford3000-progress-v1';
@@ -78,6 +81,9 @@ let currentUser = null;
 let googleInitialized = false;
 let saveDebounceTimer = null;
 let keepAuthMessage = false;
+let manualGoogleButton = null;
+let manualGoogleButtonVisible = false;
+let googleButtonHint = '';
 
 const state = {
   mode: 'en-ru',
@@ -307,6 +313,25 @@ function showAuthMessage(message) {
   }
   elements.authMessage.textContent = message;
   elements.authMessage.classList.remove('hidden');
+}
+
+async function handleManualGoogleSignIn() {
+  if (!firebaseAuth) return;
+  showAuthMessage('');
+  try {
+    await signInWithPopup(firebaseAuth, googleProvider);
+  } catch (error) {
+    console.error('Failed to sign in with Google popup', error);
+    showAuthMessage('Не удалось войти через Google, попробуйте снова');
+  }
+}
+
+function setManualGoogleButtonVisibility(visible) {
+  manualGoogleButtonVisible = Boolean(visible);
+  if (manualGoogleButton) {
+    const hideManualButton = !manualGoogleButtonVisible && Boolean(window.google?.accounts?.id);
+    manualGoogleButton.classList.toggle('hidden', hideManualButton);
+  }
 }
 
 function applyTheme(theme) {
@@ -807,26 +832,69 @@ async function handleCredentialResponse(response) {
     await signInWithCredential(firebaseAuth, credential);
   } catch (error) {
     console.error('Failed to authenticate with Google credential', error);
+    setManualGoogleButtonVisibility(true);
+    renderGoogleButton();
     showAuthMessage('Не удалось войти через Google, попробуйте снова');
   }
 }
 
 function renderGoogleButton() {
-  if (!elements.authSignedOut || !window.google?.accounts?.id) return;
-  elements.authSignedOut.innerHTML = '';
-  window.google.accounts.id.renderButton(elements.authSignedOut, {
-    theme: document.documentElement.dataset.theme === 'dark' ? 'filled_black' : 'outline',
-    size: 'medium',
-    type: 'standard',
-    text: 'signin_with',
-    shape: 'pill',
-  });
+  if (!elements.authSignedOut) return;
+
+  const container = elements.authSignedOut;
+  const googleAvailable = Boolean(window.google?.accounts?.id);
+
+  container.innerHTML = '';
+
+  if (googleAvailable) {
+    const googleButtonContainer = document.createElement('div');
+    googleButtonContainer.className = 'google-signin-button';
+    container.appendChild(googleButtonContainer);
+    window.google.accounts.id.renderButton(googleButtonContainer, {
+      theme: document.documentElement.dataset.theme === 'dark' ? 'filled_black' : 'outline',
+      size: 'medium',
+      type: 'standard',
+      text: 'signin_with',
+      shape: 'pill',
+    });
+  }
+
+  if (googleButtonHint) {
+    const hint = document.createElement('span');
+    hint.className = 'auth-hint';
+    hint.textContent = googleButtonHint;
+    container.appendChild(hint);
+  }
+
+  manualGoogleButton = document.createElement('button');
+  manualGoogleButton.type = 'button';
+  manualGoogleButton.className = 'ghost small manual-google-button';
+  manualGoogleButton.textContent = 'Войти через Google';
+  manualGoogleButton.addEventListener('click', handleManualGoogleSignIn);
+
+  const shouldShowManual = manualGoogleButtonVisible || !googleAvailable;
+  if (!shouldShowManual) {
+    manualGoogleButton.classList.add('hidden');
+  }
+
+  container.appendChild(manualGoogleButton);
 }
 
 function setupGoogleSignIn() {
   const clientId = getGoogleClientId();
-  if (!clientId || !elements.authSignedOut) return;
-  if (!window.google?.accounts?.id) return;
+  if (!elements.authSignedOut) return;
+  if (!clientId) {
+    googleButtonHint = 'Добавьте Google Client ID в index.html, чтобы включить вход через Google';
+    setManualGoogleButtonVisibility(true);
+    renderGoogleButton();
+    return;
+  }
+  googleButtonHint = '';
+  if (!window.google?.accounts?.id) {
+    setManualGoogleButtonVisibility(false);
+    renderGoogleButton();
+    return;
+  }
 
   if (!googleInitialized) {
     window.google.accounts.id.initialize({
@@ -875,18 +943,10 @@ async function initAuth() {
   updateAuthUI();
 
   const clientId = getGoogleClientId();
-  if (!clientId) {
-    if (elements.authSignedOut) {
-      elements.authSignedOut.innerHTML =
-        '<span class="auth-hint">Добавьте Google Client ID в index.html, чтобы включить вход через Google</span>';
-    }
-    return;
+  if (clientId) {
+    window.addEventListener(GOOGLE_EVENT_NAME, setupGoogleSignIn, { once: false });
   }
-
-  window.addEventListener(GOOGLE_EVENT_NAME, setupGoogleSignIn, { once: false });
-  if (window.google?.accounts?.id) {
-    setupGoogleSignIn();
-  }
+  setupGoogleSignIn();
 }
 
 function initUI() {

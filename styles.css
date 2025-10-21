@@ -156,6 +156,10 @@ body::before {
   justify-content: flex-end;
 }
 
+.auth-signin .manual-google-button {
+  margin-left: 0.5rem;
+}
+
 .auth-hint {
   font-size: 0.8rem;
   color: var(--muted);
