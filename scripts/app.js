@@ -1153,7 +1153,7 @@ async function resetProgress() {
 
 // Override loadProgress to use Firestore
 async function loadProgress() {
-  const storedProgress = getProgressFromLocalStorage();
+  const storedProgress = loadProgressFromLocalStorage();
   const fallback = storedProgress || null;
   if (isSignedIn()) {
     try {
