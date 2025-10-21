@@ -15,6 +15,8 @@ const firebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
 const DATA_URL = 'data/cards.json';
 const STORAGE_KEY = 'oxford3000-progress-v1';
+function getProgressFromLocalStorage() { return loadProgressFromLocalStorage(); }
+
 const SETTINGS_KEY = 'oxford3000-settings-v1';
 const API_BASE_URL = '/api';
 const PROGRESS_ENDPOINT = `${API_BASE_URL}/progress`;
