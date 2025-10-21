@@ -1237,3 +1237,86 @@ async function resetProgress() {
   buildQueues();
   showNextCard();
 }
+
+// Final override for Firestore integration
+async function loadProgress() {
+  const stored = loadProgressFromLocalStorage();
+  const fallback = stored && stored.cards ? stored : createEmptyProgress();
+  progress = createEmptyProgress();
+  state.history = [];
+  if (isSignedIn()) {
+    try {
+      const userId = currentUser.sub;
+      const snap = await getDoc(doc(db, 'progress', userId));
+      if (snap.exists()) {
+        const data = snap.data();
+        if (data && data.progress && data.progress.cards && data.progress.meta) {
+          progress = data.progress;
+        } else {
+          progress = fallback;
+        }
+        if (Array.isArray(data.history)) {
+          state.history = data.history.slice(0, 100);
+        }
+        saveProgressToLocalStorage();
+        showAuthMessage('');
+      } else {
+        progress = fallback;
+        state.history = [];
+        showAuthMessage('Нет сохранённых данных, используем локальное хранилище');
+      }
+    } catch (error) {
+      console.error('Failed to load progress from Firestore', error);
+      progress = fallback;
+      state.history = [];
+      showAuthMessage('Не удалось загрузить прогресс, данные сохранены локально');
+    }
+  } else {
+    progress = fallback;
+    showAuthMessage('');
+  }
+  ensureProgressForToday();
+  state.history = state.history.slice(0, 12);
+  renderHistory();
+}
+
+async function persistProgress() {
+  if (isSignedIn()) {
+    try {
+      await setDoc(doc(db, 'progress', currentUser.sub), {
+        progress,
+        history: state.history,
+      });
+      saveProgressToLocalStorage();
+      showAuthMessage('');
+    } catch (error) {
+      console.error('Failed to save progress to Firestore', error);
+      saveProgressToLocalStorage();
+      showAuthMessage('Не удалось синхронизировать прогресс с облаком, данные сохранены локально');
+      throw error;
+    }
+  } else {
+    saveProgressToLocalStorage();
+  }
+}
+
+async function resetProgress() {
+  if (!confirm('Удалить прогресс и начать заново?')) return;
+  try {
+    if (isSignedIn()) {
+      await setDoc(doc(db, 'progress', currentUser.sub), {});
+      showAuthMessage('');
+    } else {
+      localStorage.removeItem(getProgressStorageKey());
+    }
+  } catch (error) {
+    console.error('Failed to reset progress in cloud', error);
+    showAuthMessage('Не удалось очистить данные на сервере');
+  }
+  progress = createEmptyProgress();
+  state.history = [];
+  renderHistory();
+  await persistProgress();
+  buildQueues();
+  showNextCard();
+}
