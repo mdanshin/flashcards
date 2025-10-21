@@ -1,6 +1,39 @@
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  deleteDoc,
+  serverTimestamp,
+} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithCredential,
+  signOut as firebaseSignOut,
+  onAuthStateChanged,
+} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+
+const firebaseConfig = {
+  apiKey: 'AIzaSyApTqcB68Jqdm3U6K-uWz40s5pD6BuCfCU',
+  authDomain: 'flashcards-706bb.firebaseapp.com',
+  projectId: 'flashcards-706bb',
+  storageBucket: 'flashcards-706bb.firebasestorage.app',
+  messagingSenderId: '1068598237549',
+  appId: '1:1068598237549:web:a83c28c29be44d18b12264',
+  measurementId: 'G-8W5VMC6TZV',
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const firestore = getFirestore(firebaseApp);
+const firebaseAuth = getAuth(firebaseApp);
+
 const DATA_URL = 'data/cards.json';
 const STORAGE_KEY = 'oxford3000-progress-v1';
-function getProgressFromLocalStorage() { return loadProgressFromLocalStorage(); }
+function getProgressFromLocalStorage() {
+  return loadProgressFromLocalStorage();
+}
 
 const SETTINGS_KEY = 'oxford3000-settings-v1';
 const DEFAULT_SETTINGS = {
@@ -12,9 +45,7 @@ const DEFAULT_SETTINGS = {
   preferredLevel: 'all',
 };
 
-const AUTH_STORAGE_KEY = 'oxford3000-auth-user-v1';
 const GOOGLE_EVENT_NAME = 'google-identity-loaded';
-const TOKEN_EXP_SKEW_MS = 60 * 1000;
 
 const LEVEL_LABELS = [
   { value: 'all', label: 'Все уровни' },
@@ -78,38 +109,14 @@ function createEmptyProgress() {
 }
 
 function getProgressStorageKey() {
-  if (currentUser?.sub) {
-    return `${STORAGE_KEY}::${currentUser.sub}`;
+  if (currentUser?.id) {
+    return `${STORAGE_KEY}::${currentUser.id}`;
   }
   return STORAGE_KEY;
 }
 
-function hasValidToken(user) {
-  if (!user?.sub || !user?.token) {
-    return false;
-  }
-  const exp = Number(user.tokenExp);
-  if (!Number.isFinite(exp)) {
-    return false;
-  }
-  return exp - TOKEN_EXP_SKEW_MS > Date.now();
-}
-
 function isSignedIn() {
-  return hasValidToken(currentUser);
-}
-
-function getAuthToken() {
-  return isSignedIn() ? currentUser.token : null;
-}
-
-function createAuthHeaders(base = {}) {
-  const headers = { ...base };
-  const token = getAuthToken();
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-  return headers;
+  return Boolean(currentUser?.id);
 }
 
 function loadProgressFromLocalStorage() {
@@ -169,14 +176,11 @@ async function loadProgress() {
 
   if (isSignedIn()) {
     try {
-      const response = await fetch('/api/progress', {
-        method: 'GET',
-        headers: createAuthHeaders(),
-        credentials: 'same-origin',
-      });
+      const docRef = doc(firestore, 'progress', currentUser.id);
+      const snapshot = await getDoc(docRef);
 
-      if (response.ok) {
-        const data = await response.json();
+      if (snapshot.exists()) {
+        const data = snapshot.data();
         if (data?.progress?.cards && data?.progress?.meta) {
           progress = data.progress;
         } else {
@@ -188,26 +192,19 @@ async function loadProgress() {
         }
         saveProgressToLocalStorage();
         showAuthMessage('');
-      } else if (response.status === 404) {
-        const fallback = storedProgress || fallbackProgress;
-        progress = fallback?.cards ? fallback : createEmptyProgress();
-        state.history = fallbackHistory;
-        showAuthMessage('Нет сохранённых данных на сервере, прогресс сохраняется локально');
-      } else if (response.status === 401) {
-        handleUnauthorized();
-        const fallback = storedProgress || fallbackProgress;
-        progress = fallback?.cards ? fallback : createEmptyProgress();
-        state.history = fallbackHistory;
       } else {
-        throw new Error(`Unexpected status ${response.status}`);
+        const fallback = storedProgress || fallbackProgress;
+        progress = fallback?.cards ? fallback : createEmptyProgress();
+        state.history = fallbackHistory;
+        showAuthMessage('Нет сохранённых данных в облаке, прогресс сохраняется локально');
       }
     } catch (error) {
-      console.error('Failed to load progress from server', error);
+      console.error('Failed to load progress from Firebase', error);
       const fallback = storedProgress || fallbackProgress;
       progress = fallback?.cards ? fallback : createEmptyProgress();
       state.history = fallbackHistory;
       if (isSignedIn()) {
-        showAuthMessage('Не удалось загрузить прогресс с сервера, данные использованы из локального хранилища');
+        showAuthMessage('Не удалось загрузить прогресс из облака, данные использованы из локального хранилища');
       } else {
         if (!keepAuthMessage) {
           showAuthMessage('');
@@ -231,34 +228,20 @@ async function loadProgress() {
 async function persistProgress() {
   if (isSignedIn()) {
     try {
-      const response = await fetch('/api/progress', {
-        method: 'POST',
-        headers: createAuthHeaders({ 'Content-Type': 'application/json' }),
-        credentials: 'same-origin',
-        body: JSON.stringify({
-          progress,
-          history: state.history,
-        }),
+      const docRef = doc(firestore, 'progress', currentUser.id);
+      await setDoc(docRef, {
+        progress,
+        history: state.history.slice(0, 100),
+        updatedAt: serverTimestamp(),
       });
-
-      if (response.ok) {
-        saveProgressToLocalStorage();
-        showAuthMessage('');
-        return;
-      }
-
-      if (response.status === 401) {
-        handleUnauthorized();
-        saveProgressToLocalStorage();
-        return;
-      }
-
-      throw new Error(`Unexpected status ${response.status}`);
+      saveProgressToLocalStorage();
+      showAuthMessage('');
+      return;
     } catch (error) {
-      console.error('Failed to save progress to server', error);
+      console.error('Failed to save progress to Firebase', error);
       saveProgressToLocalStorage();
       if (isSignedIn()) {
-        showAuthMessage('Не удалось синхронизировать прогресс с сервером, данные сохранены локально');
+        showAuthMessage('Не удалось синхронизировать прогресс с облаком, данные сохранены локально');
       }
       throw error;
     }
@@ -324,11 +307,6 @@ function showAuthMessage(message) {
   }
   elements.authMessage.textContent = message;
   elements.authMessage.classList.remove('hidden');
-}
-
-function handleUnauthorized() {
-  showAuthMessage('Сеанс Google истёк, войдите снова');
-  signOut();
 }
 
 function applyTheme(theme) {
@@ -738,28 +716,15 @@ async function resetProgress() {
 
   try {
     if (isSignedIn()) {
-      const response = await fetch('/api/progress', {
-        method: 'DELETE',
-        headers: createAuthHeaders(),
-        credentials: 'same-origin',
-      });
-
-      if (response.status === 401) {
-        handleUnauthorized();
-        return;
-      }
-
-      if (!response.ok && response.status !== 204) {
-        throw new Error(`Unexpected status ${response.status}`);
-      }
-
+      const docRef = doc(firestore, 'progress', currentUser.id);
+      await deleteDoc(docRef);
       showAuthMessage('');
     } else {
       localStorage.removeItem(getProgressStorageKey());
     }
   } catch (error) {
-    console.error('Failed to reset progress on server', error);
-    showAuthMessage('Не удалось очистить данные на сервере');
+    console.error('Failed to reset progress in Firebase', error);
+    showAuthMessage('Не удалось очистить данные в облаке');
   }
 
   progress = createEmptyProgress();
@@ -774,26 +739,6 @@ function getGoogleClientId() {
   const meta = document.querySelector('meta[name="google-signin-client-id"]');
   const value = meta?.content?.trim();
   return value || null;
-}
-
-function decodeJwtPayload(token) {
-  try {
-    const payload = token.split('.')[1];
-    if (!payload) return null;
-    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
-    const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
-    const decoded = atob(padded);
-    const json = decodeURIComponent(
-      decoded
-        .split('')
-        .map((char) => `%${`00${char.charCodeAt(0).toString(16)}`.slice(-2)}`)
-        .join(''),
-    );
-    return JSON.parse(json);
-  } catch (error) {
-    console.warn('Failed to decode Google credential', error);
-    return null;
-  }
 }
 
 function updateAuthUI() {
@@ -838,57 +783,32 @@ async function handleUserChange() {
 }
 
 function setCurrentUser(user, { forceReload = false } = {}) {
-  const previousId = currentUser?.sub || null;
-  let nextUser = null;
-
-  if (user) {
-    const tokenExp = Number(user.tokenExp);
-    const candidate = {
-      sub: String(user.sub),
-      name: user.name || null,
-      email: user.email || null,
-      picture: user.picture || null,
-      token: user.token,
-      tokenExp: Number.isFinite(tokenExp) ? tokenExp : 0,
-    };
-    if (hasValidToken(candidate)) {
-      nextUser = candidate;
-    }
-  }
-
-  currentUser = nextUser;
-
-  try {
-    if (currentUser) {
-      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(currentUser));
-    } else {
-      localStorage.removeItem(AUTH_STORAGE_KEY);
-    }
-  } catch (error) {
-    console.warn('Failed to persist auth state', error);
-  }
+  const previousId = currentUser?.id || null;
+  currentUser = user
+    ? {
+        id: user.id,
+        name: user.name || null,
+        email: user.email || null,
+        picture: user.picture || null,
+      }
+    : null;
 
   updateAuthUI();
-  const nextId = currentUser?.sub || null;
+  const nextId = currentUser?.id || null;
   if (previousId !== nextId || forceReload) {
     handleUserChange().catch((error) => console.error('Failed to refresh user state', error));
   }
 }
 
-function handleCredentialResponse(response) {
-  if (!response?.credential) return;
-  const payload = decodeJwtPayload(response.credential);
-  if (!payload?.sub) return;
-  const forceReload = currentUser?.sub === payload.sub;
-  const tokenExp = payload.exp ? payload.exp * 1000 : Date.now() + 5 * 60 * 1000;
-  setCurrentUser({
-    sub: payload.sub,
-    name: payload.name,
-    email: payload.email,
-    picture: payload.picture || payload.pictureUrl || payload.picture_url,
-    token: response.credential,
-    tokenExp,
-  }, { forceReload });
+async function handleCredentialResponse(response) {
+  if (!response?.credential || !firebaseAuth) return;
+  try {
+    const credential = GoogleAuthProvider.credential(response.credential);
+    await signInWithCredential(firebaseAuth, credential);
+  } catch (error) {
+    console.error('Failed to authenticate with Google credential', error);
+    showAuthMessage('Не удалось войти через Google, попробуйте снова');
+  }
 }
 
 function renderGoogleButton() {
@@ -925,37 +845,31 @@ function setupGoogleSignIn() {
   }
 }
 
-function signOut() {
+async function signOut() {
   if (window.google?.accounts?.id) {
     window.google.accounts.id.disableAutoSelect();
+  }
+  try {
+    await firebaseSignOut(firebaseAuth);
+  } catch (error) {
+    console.warn('Failed to sign out from Firebase', error);
   }
   setCurrentUser(null, { forceReload: true });
 }
 
 async function initAuth() {
-  try {
-    const stored = localStorage.getItem(AUTH_STORAGE_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      const tokenExp = Number(parsed?.tokenExp);
-      const candidate = {
-        sub: parsed?.sub,
-        name: parsed?.name || null,
-        email: parsed?.email || null,
-        picture: parsed?.picture || null,
-        token: parsed?.token,
-        tokenExp: Number.isFinite(tokenExp) ? tokenExp : 0,
-      };
-      if (hasValidToken(candidate)) {
-        currentUser = candidate;
-      } else {
-        localStorage.removeItem(AUTH_STORAGE_KEY);
-      }
+  onAuthStateChanged(firebaseAuth, (user) => {
+    if (user) {
+      setCurrentUser({
+        id: user.uid,
+        name: user.displayName || user.email || 'Пользователь',
+        email: user.email || null,
+        picture: user.photoURL || null,
+      });
+    } else {
+      setCurrentUser(null);
     }
-  } catch (error) {
-    console.warn('Failed to parse stored user', error);
-    currentUser = null;
-  }
+  });
 
   await loadProgress();
   updateAuthUI();
