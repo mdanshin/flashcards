@@ -596,14 +596,15 @@ function renderCard() {
 
   const level = card.level ? card.level.toUpperCase() : null;
   const parts = (card.pos || []).join(', ');
-  // Only the review status here — level and part of speech are already shown
+  // Only the study status here — level and part of speech are already shown
   // as badges on the other side of the meta row.
-  if (state.currentKind === 'new') {
+  const entry = progress.cards[card.word];
+  if (!entry || !entry.seen) {
     frontMeta.textContent = 'Новая';
-  } else if (state.currentKind === 'review') {
-    frontMeta.textContent = 'Повтор';
+  } else if (entry.state === 'learning' || entry.state === 'relearning') {
+    frontMeta.textContent = 'Учу';
   } else {
-    frontMeta.textContent = '';
+    frontMeta.textContent = 'Повтор';
   }
 
   if (state.mode === 'en-ru') {
@@ -694,20 +695,174 @@ function ensureCardSelected() {
   }
 }
 
+// --- Anki-style scheduler ----------------------------------------------------
+// Cards move through states new → learning → review, dropping to relearning on a
+// lapse. Learning/relearning use short minute-steps; review uses day-intervals
+// scaled by the card's ease. Grades: 0 Again, 1 Hard, 2 Good, 3 Easy.
+const SRS = {
+  learningSteps: [1, 10], // minutes, for brand-new cards
+  graduatingInterval: 1, // days, when a card leaves learning on "Good"
+  easyInterval: 4, // days, when it leaves learning on "Easy"
+  startingEase: 2.5,
+  easyBonus: 1.3,
+  hardFactor: 1.2,
+  intervalModifier: 1.0,
+  lapseIntervalPct: 0, // fraction of the old interval kept after a lapse
+  minInterval: 1, // days
+  maxInterval: 36500, // days
+};
+
+const MS_MIN = 60 * 1000;
+const MS_DAY = 24 * 60 * 60 * 1000;
+
+let learningTimer = null;
+
+function relearnSteps() {
+  return [Math.max(1, settings.lapseMinutes || 10)];
+}
+
+function fuzzedInterval(intervalDays) {
+  let value = intervalDays;
+  if (value >= 2.5) {
+    const spread = Math.max(1, value * 0.05);
+    value += (Math.random() * 2 - 1) * spread;
+  }
+  return Math.min(SRS.maxInterval, Math.max(SRS.minInterval, Math.round(value)));
+}
+
+function createEntry(now) {
+  return {
+    state: 'learning',
+    step: 0,
+    ease: SRS.startingEase,
+    interval: 0,
+    due: now,
+    lastReview: null,
+    totalReviews: 0,
+    lapses: 0,
+    seen: false,
+  };
+}
+
+// Fill defaults and migrate entries saved by the old SM-2 model (no `state`).
+function normalizeEntry(entry, now) {
+  if (!entry) return createEntry(now);
+  if (!entry.state) {
+    entry.state = entry.interval && entry.interval >= 1 ? 'review' : 'learning';
+    entry.step = 0;
+  }
+  if (typeof entry.ease !== 'number') entry.ease = SRS.startingEase;
+  if (typeof entry.interval !== 'number') entry.interval = 0;
+  if (typeof entry.step !== 'number') entry.step = 0;
+  return entry;
+}
+
+function graduateEntry(entry, now, easy, fromRelearn) {
+  entry.state = 'review';
+  entry.step = 0;
+  if (fromRelearn) {
+    entry.interval = Math.max(SRS.minInterval, Math.round(entry.interval || SRS.minInterval));
+  } else {
+    entry.interval = easy ? SRS.easyInterval : SRS.graduatingInterval;
+  }
+  entry.due = now + entry.interval * MS_DAY;
+}
+
+function scheduleLearn(entry, grade, now, steps, fromRelearn) {
+  if (grade === 0) {
+    entry.step = 0;
+    entry.due = now + steps[0] * MS_MIN;
+  } else if (grade === 3) {
+    graduateEntry(entry, now, true, fromRelearn);
+  } else if (grade === 1) {
+    const s = Math.min(entry.step, steps.length - 1);
+    entry.due = now + steps[s] * MS_MIN;
+  } else {
+    const next = entry.step + 1;
+    if (next >= steps.length) {
+      graduateEntry(entry, now, false, fromRelearn);
+    } else {
+      entry.step = next;
+      entry.due = now + steps[next] * MS_MIN;
+    }
+  }
+}
+
+function scheduleReview(entry, grade, now) {
+  const ease = entry.ease || SRS.startingEase;
+  if (grade === 0) {
+    entry.lapses = (entry.lapses || 0) + 1;
+    entry.ease = Math.max(1.3, ease - 0.2);
+    entry.interval = Math.max(SRS.minInterval, Math.round(entry.interval * SRS.lapseIntervalPct));
+    entry.state = 'relearning';
+    entry.step = 0;
+    entry.due = now + relearnSteps()[0] * MS_MIN;
+    return;
+  }
+  let interval;
+  if (grade === 1) {
+    entry.ease = Math.max(1.3, ease - 0.15);
+    interval = entry.interval * SRS.hardFactor * SRS.intervalModifier;
+  } else if (grade === 2) {
+    interval = entry.interval * ease * SRS.intervalModifier;
+  } else {
+    entry.ease = ease + 0.15;
+    interval = entry.interval * ease * SRS.intervalModifier * SRS.easyBonus;
+  }
+  interval = Math.max(entry.interval + 1, interval); // never shrink a review
+  entry.interval = fuzzedInterval(interval);
+  entry.due = now + entry.interval * MS_DAY;
+}
+
+function applyGrade(entry, grade, now) {
+  if (entry.state === 'review') {
+    scheduleReview(entry, grade, now);
+  } else if (entry.state === 'relearning') {
+    scheduleLearn(entry, grade, now, relearnSteps(), true);
+  } else {
+    scheduleLearn(entry, grade, now, SRS.learningSteps, false);
+  }
+}
+
+// When only near-future learning cards remain, wake up and show them.
+function scheduleLearningWakeup() {
+  if (learningTimer) {
+    clearTimeout(learningTimer);
+    learningTimer = null;
+  }
+  const now = Date.now();
+  let soonest = Infinity;
+  for (const card of filteredCards) {
+    const entry = progress.cards[card.word];
+    if (entry && entry.due > now && (entry.state === 'learning' || entry.state === 'relearning')) {
+      if (entry.due < soonest) soonest = entry.due;
+    }
+  }
+  if (soonest === Infinity || soonest - now > 20 * MS_MIN) return null;
+  learningTimer = setTimeout(() => {
+    learningTimer = null;
+    if (!state.currentCard) {
+      buildQueues();
+      showNextCard();
+    }
+  }, soonest - now + 250);
+  return soonest;
+}
+
+function pluralizeMinutes(count) {
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+  if (mod10 === 1 && mod100 !== 11) return 'минуту';
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return 'минуты';
+  return 'минут';
+}
+
 function gradeCard(grade) {
   if (state.currentCard == null) return;
   const card = state.currentCard;
   const now = Date.now();
   const today = getTodayKey();
-  const entry = progress.cards[card.word] || {
-    ease: 2.5,
-    interval: 0,
-    repetitions: 0,
-    due: now,
-    lastReview: null,
-    totalReviews: 0,
-    lapses: 0,
-  };
+  const entry = normalizeEntry(progress.cards[card.word], now);
 
   if (progress.meta.lastReviewDay !== today) {
     progress.meta.lastReviewDay = today;
@@ -715,50 +870,15 @@ function gradeCard(grade) {
     progress.meta.newToday = 0;
   }
 
-  if (state.currentKind === 'new' && !entry.seen) {
+  if (!entry.seen) {
     entry.seen = true;
-    progress.meta.newToday = Math.min(
-      settings.dailyNewLimit,
-      progress.meta.newToday + 1,
-    );
+    progress.meta.newToday = Math.min(settings.dailyNewLimit, progress.meta.newToday + 1);
   }
 
   progress.meta.reviewsToday += 1;
-  entry.totalReviews += 1;
+  entry.totalReviews = (entry.totalReviews || 0) + 1;
 
-  if (grade === 0) {
-    entry.repetitions = 0;
-    entry.interval = 0;
-    entry.ease = Math.max(1.3, (entry.ease || 2.5) - 0.2);
-    entry.due = now + settings.lapseMinutes * 60 * 1000;
-    entry.lapses = (entry.lapses || 0) + 1;
-  } else {
-    entry.ease = entry.ease || 2.5;
-    if (grade === 1) {
-      entry.ease = Math.max(1.3, entry.ease - 0.15);
-      entry.interval = entry.interval ? Math.max(1, Math.round(entry.interval * 1.2)) : 1;
-    } else if (grade === 2) {
-      if (entry.repetitions === 0) {
-        entry.interval = 1;
-      } else if (entry.repetitions === 1) {
-        entry.interval = 6;
-      } else {
-        entry.interval = Math.max(1, Math.round(entry.interval * entry.ease));
-      }
-      entry.repetitions += 1;
-    } else if (grade === 3) {
-      entry.ease = entry.ease + 0.15;
-      if (entry.repetitions === 0) {
-        entry.interval = 4;
-      } else if (entry.repetitions === 1) {
-        entry.interval = Math.round(entry.interval * 2.5);
-      } else {
-        entry.interval = Math.max(1, Math.round(entry.interval * entry.ease * 1.3));
-      }
-      entry.repetitions += 1;
-    }
-    entry.due = now + (entry.interval || 1) * 86400000;
-  }
+  applyGrade(entry, grade, now);
 
   entry.lastReview = now;
   progress.cards[card.word] = entry;
@@ -777,8 +897,7 @@ function gradeCard(grade) {
   state.currentKind = null;
   state.showingAnswer = false;
   buildQueues();
-  pickNextCard();
-  renderCard();
+  showNextCard();
 }
 
 function renderHistory() {
@@ -795,9 +914,22 @@ function renderHistory() {
 }
 
 function showNextCard() {
+  if (learningTimer) {
+    clearTimeout(learningTimer);
+    learningTimer = null;
+  }
   pickNextCard();
   state.showingAnswer = false;
   renderCard();
+  if (!state.currentCard) {
+    const soonest = scheduleLearningWakeup();
+    if (soonest && elements.frontTitle && elements.cardMessage) {
+      const mins = Math.max(1, Math.round((soonest - Date.now()) / MS_MIN));
+      elements.frontTitle.textContent = 'Небольшой перерыв';
+      elements.cardMessage.textContent =
+        `Следующая карточка примерно через ${mins} ${pluralizeMinutes(mins)} — она появится сама.`;
+    }
+  }
 }
 
 function handleModeChange(mode) {
