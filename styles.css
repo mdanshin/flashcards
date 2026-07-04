@@ -329,6 +329,29 @@ button.small {
   gap: 0.4rem;
 }
 
+.google-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.95rem;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+  font-size: 0.86rem;
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
+.google-btn:hover {
+  border-color: var(--oxford);
+  color: var(--oxford);
+}
+.google-btn .g-logo {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+
 .auth-hint {
   display: none;
 }
@@ -1009,6 +1032,12 @@ input[type="search"]:focus {
   }
   .auth-name {
     display: none;
+  }
+  .google-btn span {
+    display: none;
+  }
+  .google-btn {
+    padding: 0.5rem;
   }
 }
 
