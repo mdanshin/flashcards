@@ -715,6 +715,8 @@ function renderCard() {
     elements.cardMessage.innerHTML = elements.defaultCardMessage;
   }
 
+  if (elements.card) elements.card.classList.toggle('imported', Boolean(card.imported));
+
   elements.showAnswer.classList.toggle('hidden', state.showingAnswer);
   elements.actionsContainer.classList.toggle('hidden', !state.showingAnswer);
   elements.actionsContainer.classList.toggle('disabled', !state.showingAnswer);
@@ -1411,6 +1413,7 @@ function initUI() {
   elements.levelSelect = document.getElementById('level-filter');
   elements.showAnswer = document.getElementById('show-answer');
   elements.actionsContainer = document.getElementById('answer-actions');
+  elements.card = document.getElementById('card');
   elements.cardFront = document.getElementById('card-front');
   elements.cardBack = document.getElementById('card-back');
   elements.frontTitle = document.getElementById('front-title');

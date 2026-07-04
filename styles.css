@@ -487,6 +487,25 @@ button.small {
   overflow-wrap: anywhere;
 }
 
+/* Imported decks hold arbitrary text (sentences, cloze) — use a smaller,
+   readable sans treatment instead of the big dictionary serif. */
+.card.imported .prompt {
+  font-family: var(--font-ui);
+  font-size: clamp(1.35rem, 3.2vw, 1.95rem);
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0;
+  white-space: pre-wrap;
+}
+.card.imported #back-title {
+  font-family: var(--font-ui);
+  font-size: clamp(1.2rem, 2.8vw, 1.6rem);
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: 0;
+  white-space: pre-wrap;
+}
+
 .card-message {
   color: var(--ink-soft);
   font-size: 0.9rem;

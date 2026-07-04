@@ -119,6 +119,21 @@ def init_db():
 
 
 # --- .apkg parsing (Basic front/back) ---------------------------------------
+CLOZE_RE = re.compile(r"\{\{c\d+::(.+?)\}\}", re.S)
+
+
+def cloze_render(text: str, reveal: bool) -> str:
+    """Turn Anki cloze markup into a front (deletion hidden) or back (revealed)."""
+    def repl(match):
+        inner = match.group(1)
+        if "::" in inner:
+            answer, hint = inner.split("::", 1)
+        else:
+            answer, hint = inner, None
+        return answer if reveal else f"[{hint or '…'}]"
+    return CLOZE_RE.sub(repl, text)
+
+
 def strip_html(text: str) -> str:
     if not text:
         return ""
@@ -169,10 +184,19 @@ def parse_apkg(file_bytes: bytes):
         cards = []
         for i, row in enumerate(conn.execute("SELECT flds FROM notes")):
             flds = row["flds"].split("\x1f")
-            front = strip_html(flds[0]) if flds else ""
-            back = strip_html(flds[1]) if len(flds) >= 2 else ""
-            if not back and len(flds) > 2:
-                back = strip_html(" / ".join(flds[1:]))
+            raw = flds[0] if flds else ""
+            if CLOZE_RE.search(raw):
+                # Cloze note: hide the deletion on the front, reveal it on the back.
+                front = strip_html(cloze_render(raw, reveal=False))
+                back = strip_html(cloze_render(raw, reveal=True))
+                extra = strip_html(flds[1]) if len(flds) >= 2 else ""
+                if extra:
+                    back = f"{back}\n\n{extra}"
+            else:
+                front = strip_html(raw)
+                back = strip_html(flds[1]) if len(flds) >= 2 else ""
+                if not back and len(flds) > 2:
+                    back = strip_html(" / ".join(flds[1:]))
             if front and back:
                 cards.append({"ord": i, "front": front, "back": back})
         conn.close()
