@@ -200,10 +200,12 @@ async function loadProgress() {
         saveProgressToLocalStorage();
         showAuthMessage('');
       } else {
+        // First sign-in with no cloud document yet — a normal empty state,
+        // not an error. Progress will sync to the cloud on the first answer.
         const fallback = storedProgress || fallbackProgress;
         progress = fallback?.cards ? fallback : createEmptyProgress();
         state.history = fallbackHistory;
-        showAuthMessage('Нет сохранённых данных в облаке, прогресс сохраняется локально');
+        showAuthMessage('');
       }
     } catch (error) {
       console.error('Failed to load progress from Firebase', error);
