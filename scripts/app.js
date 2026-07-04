@@ -48,6 +48,9 @@ const DEFAULT_SETTINGS = {
   preferredLevel: 'all',
 };
 
+// Settings synced to the cloud alongside progress (all of them, theme included).
+const SYNCED_SETTING_KEYS = Object.keys(DEFAULT_SETTINGS);
+
 const GOOGLE_EVENT_NAME = 'google-identity-loaded';
 
 const LEVEL_LABELS = [
@@ -197,6 +200,7 @@ async function loadProgress() {
         if (Array.isArray(data?.history)) {
           state.history = data.history.slice(0, 100);
         }
+        applyCloudSettings(data?.settings);
         saveProgressToLocalStorage();
         showAuthMessage('');
       } else {
@@ -241,6 +245,7 @@ async function persistProgress() {
       await setDoc(docRef, {
         progress,
         history: state.history.slice(0, 100),
+        settings: getSyncableSettings(),
         updatedAt: serverTimestamp(),
       });
       saveProgressToLocalStorage();
@@ -280,16 +285,7 @@ function saveProgress(options = {}) {
   return Promise.resolve();
 }
 
-function loadSettings() {
-  const raw = localStorage.getItem(SETTINGS_KEY);
-  if (raw) {
-    try {
-      const stored = JSON.parse(raw);
-      settings = { ...DEFAULT_SETTINGS, ...stored };
-    } catch (err) {
-      console.warn('Failed to parse settings, using defaults', err);
-    }
-  }
+function validateSettings() {
   const availableModes = Object.keys(MODE_LABELS);
   if (!availableModes.includes(settings.preferredMode)) {
     settings.preferredMode = DEFAULT_SETTINGS.preferredMode;
@@ -302,8 +298,72 @@ function loadSettings() {
   state.level = settings.preferredLevel;
 }
 
-function saveSettings() {
+function loadSettings() {
+  const raw = localStorage.getItem(SETTINGS_KEY);
+  if (raw) {
+    try {
+      const stored = JSON.parse(raw);
+      settings = { ...DEFAULT_SETTINGS, ...stored };
+    } catch (err) {
+      console.warn('Failed to parse settings, using defaults', err);
+    }
+  }
+  validateSettings();
+}
+
+function persistSettingsLocal() {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+}
+
+function getSyncableSettings() {
+  const subset = {};
+  for (const key of SYNCED_SETTING_KEYS) {
+    if (settings[key] !== undefined) subset[key] = settings[key];
+  }
+  return subset;
+}
+
+function saveSettings() {
+  persistSettingsLocal();
+  // When signed in, fold settings into the same debounced cloud write as
+  // progress so they follow the user across devices.
+  if (isSignedIn()) {
+    saveProgress();
+  }
+}
+
+// Merge settings pulled from the cloud into the local ones and reflect them in
+// the UI. Writes only to localStorage (not back to the cloud) to avoid a loop.
+function applyCloudSettings(cloudSettings) {
+  if (!cloudSettings || typeof cloudSettings !== 'object') return;
+  let changed = false;
+  for (const key of SYNCED_SETTING_KEYS) {
+    if (cloudSettings[key] !== undefined && cloudSettings[key] !== settings[key]) {
+      settings[key] = cloudSettings[key];
+      changed = true;
+    }
+  }
+  if (!changed) return;
+  validateSettings();
+  persistSettingsLocal();
+  applySettingsToUI();
+}
+
+function applySettingsToUI() {
+  const form = document.getElementById('settings-form');
+  if (form) {
+    if (form.dailyNewLimit) form.dailyNewLimit.value = settings.dailyNewLimit;
+    if (form.lapseMinutes) form.lapseMinutes.value = settings.lapseMinutes;
+    if (form.autoplayAudio) form.autoplayAudio.checked = settings.autoplayAudio;
+    if (form.theme) form.theme.value = settings.theme;
+  }
+  if (elements.levelSelect) elements.levelSelect.value = state.level;
+  if (Array.isArray(elements.modeButtons)) {
+    elements.modeButtons.forEach((button) => {
+      button.classList.toggle('active', button.dataset.mode === state.mode);
+    });
+  }
+  applyTheme(settings.theme);
 }
 
 function showAuthMessage(message) {
