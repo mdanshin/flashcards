@@ -512,25 +512,39 @@ function pickNextCard() {
   return null;
 }
 
-const POS_ABBREV = /^[a-zа-я]{1,5}\.?$/i;
+// Mueller entries look like "1. v. 1) покидать 2) … 2. n. …": "1." / "2." mark
+// part-of-speech groups, "1)" / "2)" mark senses inside them, and each sense
+// mixes the Russian gloss with English examples. Turn that into a clean list of
+// Russian glosses.
+function cleanGloss(chunk) {
+  let c = (chunk || '').trim();
+  let prev = null;
+  // Peel off leading abbreviations/labels that end in a dot (v. n. adv. книж. p-p.).
+  while (c && c !== prev) {
+    prev = c;
+    c = c.replace(/^[a-zа-яё-]{1,6}\.\s+/i, '');
+  }
+  // Drop the trailing English example, keeping just the Russian gloss.
+  const latin = c.match(/[A-Za-z]{2,}/);
+  if (latin) c = c.slice(0, latin.index);
+  return c.replace(/^[\s;,.–-]+|[\s;,.–-]+$/g, '');
+}
 
 function parseSenses(text) {
   const trimmed = (text || '').trim();
   if (!trimmed) return [];
-  // The Mueller dictionary marks senses as "1) … 2) …" — split on those.
-  if (/\s\d+\)/.test(` ${trimmed}`)) {
-    const parts = trimmed
-      .split(/\s*\b\d+\)\s*/)
-      .map((part) => part.trim())
-      .filter((part) => part && !POS_ABBREV.test(part));
-    if (parts.length) return parts;
+  const parts = trimmed.split(/\s*\b\d+[.)]\s*/);
+  const seen = new Set();
+  const out = [];
+  for (const part of parts) {
+    const gloss = cleanGloss(part);
+    if (!gloss || !/[а-яё]/i.test(gloss)) continue;
+    const key = gloss.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(gloss);
   }
-  // Otherwise fall back to semicolon-separated variants.
-  const parts = trimmed
-    .split(/;/)
-    .map((part) => part.trim())
-    .filter(Boolean);
-  return parts.length ? parts : [trimmed];
+  return out.length ? out : [trimmed];
 }
 
 function renderCard() {
