@@ -45,6 +45,7 @@ const OXFORD_DECK_ID = 'oxford';
 let oxfordCards = [];
 let importedDecks = [];
 let activeDeckId = OXFORD_DECK_ID;
+let importStatusTimer = null;
 
 function isOxfordDeck() {
   return activeDeckId === OXFORD_DECK_ID;
@@ -1579,6 +1580,10 @@ function updateDeckUI() {
 
 function setImportStatus(message, isError) {
   if (!elements.importStatus) return;
+  if (importStatusTimer) {
+    clearTimeout(importStatusTimer);
+    importStatusTimer = null;
+  }
   elements.importStatus.textContent = message || '';
   elements.importStatus.classList.toggle('error', Boolean(isError));
 }
@@ -1648,6 +1653,7 @@ async function handleImportApkg(event) {
     const result = await apiImportDeck(file);
     await loadImportedDecks();
     setImportStatus(`Готово: «${result.name}», ${result.count} карточек`);
+    importStatusTimer = setTimeout(() => setImportStatus(''), 6000);
     await switchDeck(result.id);
   } catch (error) {
     console.error('Import failed', error);
