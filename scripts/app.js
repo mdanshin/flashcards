@@ -1223,10 +1223,13 @@ function maybePromptOneTap() {
 
 async function handleUserChange() {
   // Imported decks belong to a signed-in user; drop back to Oxford on sign-out.
-  if (!isSignedIn() && !isOxfordDeck()) {
-    activeDeckId = OXFORD_DECK_ID;
-    cards = oxfordCards;
-    updateDeckUI();
+  if (!isSignedIn()) {
+    setImportStatus('');
+    if (!isOxfordDeck()) {
+      activeDeckId = OXFORD_DECK_ID;
+      cards = oxfordCards;
+      updateDeckUI();
+    }
   }
   await loadProgress();
   if (cards.length) {
@@ -1628,6 +1631,7 @@ async function switchDeck(deckId) {
 }
 
 function handleDeckSelect(event) {
+  setImportStatus('');
   switchDeck(event.target.value).catch((error) => console.error('Failed to switch deck', error));
 }
 
