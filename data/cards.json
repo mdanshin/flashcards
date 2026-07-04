@@ -24,18 +24,6 @@
     }
   },
   {
-    "word": "CD",
-    "translation": "компакт-диск",
-    "source": "manual",
-    "level": null,
-    "pos": [],
-    "oxford_urls": [],
-    "audio": {
-      "uk": null,
-      "us": null
-    }
-  },
-  {
     "word": "December",
     "translation": "n. 1) декабрь 2) attr. декабрьский",
     "source": "mueller:December",
@@ -63,18 +51,6 @@
     "word": "Friday",
     "translation": "n. пятница; Good Friday церк. страстная пятница; Good Friday",
     "source": "mueller:Friday",
-    "level": null,
-    "pos": [],
-    "oxford_urls": [],
-    "audio": {
-      "uk": null,
-      "us": null
-    }
-  },
-  {
-    "word": "I",
-    "translation": "i n. (pl. Is, I's ) 9-я буква англ. алфавита",
-    "source": "mueller:I",
     "level": null,
     "pos": [],
     "oxford_urls": [],
@@ -123,18 +99,6 @@
     "word": "June",
     "translation": "n. 1) июнь 2) attr. июньский",
     "source": "mueller:June",
-    "level": null,
-    "pos": [],
-    "oxford_urls": [],
-    "audio": {
-      "uk": null,
-      "us": null
-    }
-  },
-  {
-    "word": "K",
-    "translation": "k n. (pl. Ks, K's ) 11-я буква англ. алфавита",
-    "source": "mueller:K",
     "level": null,
     "pos": [],
     "oxford_urls": [],
@@ -228,18 +192,6 @@
     }
   },
   {
-    "word": "OK",
-    "translation": "хорошо; согласен",
-    "source": "manual",
-    "level": null,
-    "pos": [],
-    "oxford_urls": [],
-    "audio": {
-      "uk": null,
-      "us": null
-    }
-  },
-  {
     "word": "October",
     "translation": "n. 1) октябрь 2) attr. октябрьский; the Great October Socialist Revolution Великая Октябрьская социалистическая революция",
     "source": "mueller:October",
@@ -279,18 +231,6 @@
     "word": "Sunday",
     "translation": "n. 1) воскресенье 2) attr. воскресный; Sunday best разг. лучший костюм или платье; праздничное платье; to look two ways to find Sunday разг. косить (глазами)",
     "source": "mueller:Sunday",
-    "level": null,
-    "pos": [],
-    "oxford_urls": [],
-    "audio": {
-      "uk": null,
-      "us": null
-    }
-  },
-  {
-    "word": "TV",
-    "translation": "телевизор; телевидение",
-    "source": "manual",
     "level": null,
     "pos": [],
     "oxford_urls": [],
@@ -342,22 +282,6 @@
     "level": null,
     "pos": [],
     "oxford_urls": [],
-    "audio": {
-      "uk": null,
-      "us": null
-    }
-  },
-  {
-    "word": "a",
-    "translation": "a I (pl. As, A's, Aes ) 1) 1-я буква англ. алфавита 2) условное обозначение чего-л. первого по порядку, сортности и т.п. 3) ам. высшая отметка за классную работу; straight A \"круглое отлично\" 4) муз. ля; from A to Z а) с начала и до конца; б) в совершенстве; полностью; A 1 а) 1-й класс в судовом регистре Ллойда; б) разг. первоклассный, превосходный; прекрасно, превосходно (ам. A No. 1 ) II (полная форма); (редуцированная форма) 1) грам. неопределённый артикль (а - перед согласными, перед eu и перед u, когда и произносится как ; an - перед гласными и перед немым h; напр.: a horse, но an hour; a European, a union, но an umbrella; тж. a one) 2) один; it costs a penny это стоит одно пенни 3) употр. перед little, few, good (или great), many и перед счётными существительными; a dozen дюжина; a score два десятка, напр.: a little water (time, happiness) немного воды (времени, счастья); a few days (books) несколько дней (книг); a good (или great) many days (books) очень много дней (книг) 4) (обыкн. после all of, many of) такой же, одинаковый; all of a size все одной и той же величины 5) каждый; twice a day два раза в день 6) некий; a Mr. Henry Green некий мистер Генри Грин",
-    "source": "mueller:A",
-    "level": "A1",
-    "pos": [
-      "indefinite article"
-    ],
-    "oxford_urls": [
-      "https://www.oxfordlearnersdictionaries.com/definition/english/a_1"
-    ],
     "audio": {
       "uk": null,
       "us": null
@@ -1026,22 +950,6 @@
     }
   },
   {
-    "word": "ad",
-    "translation": "сокр. разг. от advertisement",
-    "source": "mueller:ad",
-    "level": "B1",
-    "pos": [
-      "noun"
-    ],
-    "oxford_urls": [
-      "https://www.oxfordlearnersdictionaries.com/definition/english/ad_1"
-    ],
-    "audio": {
-      "uk": null,
-      "us": null
-    }
-  },
-  {
     "word": "adapt",
     "translation": "v. 1) приспосабливать, пригонять, прилаживать (to, for) 2) refl приспосабливаться, применяться 3) адаптировать, сокращать и упрощать 4) переделывать; to adapt a novel инсценировать роман",
     "source": "mueller:adapt",
@@ -1363,8 +1271,8 @@
   },
   {
     "word": "advertising",
-    "translation": "sement",
-    "source": "mueller:line",
+    "translation": "реклама; рекламный",
+    "source": "manual",
     "level": "A2",
     "pos": [
       "noun"
@@ -1527,8 +1435,8 @@
   },
   {
     "word": "afterward",
-    "translation": "s",
-    "source": "mueller:line",
+    "translation": "потом, впоследствии",
+    "source": "manual",
     "level": null,
     "pos": [],
     "oxford_urls": [],
@@ -2318,8 +2226,8 @@
   },
   {
     "word": "amused",
-    "translation": "ck",
-    "source": "mueller:line",
+    "translation": "довольный, весёлый; позабавленный",
+    "source": "manual",
     "level": null,
     "pos": [],
     "oxford_urls": [],
@@ -2785,8 +2693,8 @@
   },
   {
     "word": "anyway",
-    "translation": "= anyhow",
-    "source": "mueller:anyway",
+    "translation": "в любом случае; так или иначе",
+    "source": "manual",
     "level": "A2",
     "pos": [
       "adverb"
@@ -4561,8 +4469,8 @@
   },
   {
     "word": "basketball",
-    "translation": "court doubled for dances on week-ends",
-    "source": "mueller:line",
+    "translation": "баскетбол",
+    "source": "manual",
     "level": "A2",
     "pos": [
       "noun"
@@ -5575,8 +5483,8 @@
   },
   {
     "word": "blond",
-    "translation": "= blonde",
-    "source": "mueller:blond",
+    "translation": "белокурый, светловолосый; блондин",
+    "source": "manual",
     "level": null,
     "pos": [],
     "oxford_urls": [],
@@ -6719,18 +6627,6 @@
     }
   },
   {
-    "word": "c.",
-    "translation": "c n. (pl. Cs C's ) 1) 3-я буква англ. алфавита 2) муз. до 3) ам. сто долларов",
-    "source": "mueller:C",
-    "level": null,
-    "pos": [],
-    "oxford_urls": [],
-    "audio": {
-      "uk": null,
-      "us": null
-    }
-  },
-  {
     "word": "cabinet",
     "translation": "n. 1) кабинет министров, правительство; inner cabinet английский кабинет министров в узком составе 2) шкаф с выдвижными ящиками; застеклённый шкафчик, горка 3) ящик (радиоприёмника) 4) уст. кабинет 5) attr. правительственный, министерский; cabinet council совет министров; cabinet crisis правительственный кризис; C. Minister член совета министров 6) attr. кабинетный; cabinet photograph кабинетная фотографическая карточка; cabinet size кабинетный формат",
     "source": "mueller:cabinet",
@@ -7510,8 +7406,8 @@
   },
   {
     "word": "center",
-    "translation": "ам. = centre",
-    "source": "mueller:center",
+    "translation": "центр; середина",
+    "source": "manual",
     "level": null,
     "pos": [],
     "oxford_urls": [],
@@ -7522,8 +7418,8 @@
   },
   {
     "word": "centimeter",
-    "translation": "ам. = centimetre",
-    "source": "mueller:centimeter",
+    "translation": "сантиметр",
+    "source": "manual",
     "level": null,
     "pos": [],
     "oxford_urls": [],
@@ -8723,18 +8619,6 @@
     }
   },
   {
-    "word": "cm",
-    "translation": "e",
-    "source": "mueller:line",
-    "level": null,
-    "pos": [],
-    "oxford_urls": [],
-    "audio": {
-      "uk": null,
-      "us": null
-    }
-  },
-  {
     "word": "coach",
     "translation": "I 1. n. 1) карета, экипаж; coach and four (six) карета, запряжённая четвёркой (шестёркой) 2) ж-д. пассажирский вагон 3) автобус (междугородного сообщения) 4) ист. почтовая карета; to drive a coach and four (или six) through свести на нет, аннулировать, обойти закон (юридическое постановление и т.п.), ссылаясь на неточность или неясность в тексте; найти лазейку 2. v. 1) ехать в карете 2) перевозить в карете II 1. n. 1) репетитор (подготавливающий к экзаменам) 2) тренер; инструктор 2. v. 1) подготавливать или натаскивать к экзамену 2) заниматься с репетитором 3) тренировать, подготавливать к состязаниям 4) ав. инструктировать пилота по радио во время ночных полётов",
     "source": "mueller:coach",
@@ -8962,8 +8846,8 @@
   },
   {
     "word": "color",
-    "translation": "ам. = colour",
-    "source": "mueller:color",
+    "translation": "цвет; краска; окраска",
+    "source": "manual",
     "level": null,
     "pos": [],
     "oxford_urls": [],
@@ -9136,8 +9020,8 @@
   },
   {
     "word": "comfortably",
-    "translation": "le",
-    "source": "mueller:line",
+    "translation": "удобно, комфортно",
+    "source": "manual",
     "level": null,
     "pos": [],
     "oxford_urls": [],
@@ -9896,8 +9780,8 @@
   },
   {
     "word": "confusing",
-    "translation": "cianism",
-    "source": "mueller:line",
+    "translation": "сбивающий с толку, запутанный",
+    "source": "manual",
     "level": "B2",
     "pos": [
       "adjective"
@@ -9968,8 +9852,8 @@
   },
   {
     "word": "connection",
-    "translation": "= connexion",
-    "source": "mueller:connection",
+    "translation": "связь; соединение",
+    "source": "manual",
     "level": "B1",
     "pos": [
       "noun"
@@ -10066,8 +9950,8 @@
   },
   {
     "word": "considerably",
-    "translation": "le",
-    "source": "mueller:line",
+    "translation": "значительно, существенно",
+    "source": "manual",
     "level": null,
     "pos": [
       "adverb"
@@ -10484,8 +10368,8 @@
   },
   {
     "word": "controlled",
-    "translation": "er",
-    "source": "mueller:line",
+    "translation": "контролируемый; управляемый",
+    "source": "manual",
     "level": null,
     "pos": [],
     "oxford_urls": [],
@@ -11551,18 +11435,6 @@
       "https://www.oxfordlearnersdictionaries.com/definition/english/cry_1",
       "https://www.oxfordlearnersdictionaries.com/definition/english/cry_2"
     ],
-    "audio": {
-      "uk": null,
-      "us": null
-    }
-  },
-  {
-    "word": "ct.",
-    "translation": "fmt-1.12.1",
-    "source": "mueller:line",
-    "level": null,
-    "pos": [],
-    "oxford_urls": [],
     "audio": {
       "uk": null,
       "us": null
@@ -14816,18 +14688,6 @@
     }
   },
   {
-    "word": "etc.",
-    "translation": ".)",
-    "source": "mueller:line",
-    "level": null,
-    "pos": [],
-    "oxford_urls": [],
-    "audio": {
-      "uk": null,
-      "us": null
-    }
-  },
-  {
     "word": "ethnic",
     "translation": "a. 1) этнический 2) языческий",
     "source": "mueller:ethnic",
@@ -14943,8 +14803,8 @@
   },
   {
     "word": "everyone",
-    "translation": "= everybody",
-    "source": "mueller:everyone",
+    "translation": "каждый; все",
+    "source": "manual",
     "level": "A1",
     "pos": [
       "pronoun"
@@ -15241,8 +15101,8 @@
   },
   {
     "word": "excited",
-    "translation": "ability",
-    "source": "mueller:line",
+    "translation": "взволнованный, возбуждённый",
+    "source": "manual",
     "level": "A1",
     "pos": [
       "adjective"
@@ -15305,8 +15165,8 @@
   },
   {
     "word": "excluding",
-    "translation": "e",
-    "source": "mueller:line",
+    "translation": "исключая, за исключением",
+    "source": "manual",
     "level": null,
     "pos": [],
     "oxford_urls": [],
@@ -16457,8 +16317,8 @@
   },
   {
     "word": "favor",
-    "translation": ", favorable , favored , favorite ,",
-    "source": "mueller:favor",
+    "translation": "одолжение; благосклонность; предпочтение",
+    "source": "manual",
     "level": null,
     "pos": [],
     "oxford_urls": [],
@@ -17237,8 +17097,8 @@
   },
   {
     "word": "flavor",
-    "translation": "ам. = flavour, flavourless",
-    "source": "mueller:flavor",
+    "translation": "вкус; аромат; привкус",
+    "source": "manual",
     "level": null,
     "pos": [],
     "oxford_urls": [],
@@ -18409,8 +18269,8 @@
   },
   {
     "word": "furthest",
-    "translation": "= farthest",
-    "source": "mueller:furthest",
+    "translation": "самый дальний; самый далёкий",
+    "source": "manual",
     "level": null,
     "pos": [],
     "oxford_urls": [],
@@ -18432,18 +18292,6 @@
       "https://www.oxfordlearnersdictionaries.com/definition/english/future_1",
       "https://www.oxfordlearnersdictionaries.com/definition/english/future_2"
     ],
-    "audio": {
-      "uk": null,
-      "us": null
-    }
-  },
-  {
-    "word": "g",
-    "translation": "g n. (pl. Gs, G's ) 1) 7-я буква англ. алфавита 2) муз. соль",
-    "source": "mueller:G",
-    "level": null,
-    "pos": [],
-    "oxford_urls": [],
     "audio": {
       "uk": null,
       "us": null
@@ -18497,8 +18345,8 @@
   },
   {
     "word": "gambling",
-    "translation": "e",
-    "source": "mueller:line",
+    "translation": "азартные игры",
+    "source": "manual",
     "level": null,
     "pos": [
       "noun"
@@ -19050,18 +18898,6 @@
     }
   },
   {
-    "word": "gm",
-    "translation": "ent, abridgemen",
-    "source": "mueller:line",
-    "level": null,
-    "pos": [],
-    "oxford_urls": [],
-    "audio": {
-      "uk": null,
-      "us": null
-    }
-  },
-  {
     "word": "go",
     "translation": "1. v. (went - gone) 1) идти, ходить; быть в движении; передвигаться (в пространстве или во времени); the train goes to London поезд идёт в Лондон; who goes there? кто идёт? (окрик часового); to go after smb. идти за кем-л. {см. тж. go after} 2) ехать, путешествовать; to go by train ехать поездом; to go by plane лететь самолётом; I shall go to France я поеду во Францию 3) пойти; уходить; уезжать; стартовать; I'll be going now ну, я пошёл; it is time for us to go нам пора уходить (или идти); let me go! отпустите! 4) отправляться (часто с последующим герундием); go for shopping отправляться за покупками 5) приводиться в движение; направляться, руководствоваться (by); the engine goes by electricity машина приводится в движение электричеством; I shall go entirely by what the doctor says я буду руководствоваться исключительно тем, что говорит врач 6) иметь хождение (о монете, пословице и т.п.); быть в обращении; переходить из уст в уста; the story goes как говорят 7) быть в действии, работать (о механизме, машине); ходить (о часах); to set the clock going завести часы 8) звучать, звонить (о колоколе, звонке и т.п.); бить, отбивать (о часах) 9) простираться, вести (куда-л.), пролегать, тянуться; how far does this road go? далеко ли тянется эта дорога? 10)пройти, быть принятым, получить признание (о плане, проекте) 11)пройти, окончиться определённым результатом; the election went against him выборы кончились для него неудачно; how did the voting go? как прошло голосование?; the play went well пьеса имела успех 12)проходить; исчезать; рассеиваться, расходиться; much time has gone since that day с того дня прошло много времени; summer is going лето проходит; the clouds have gone тучи рассеялись; all hope is gone исчезли все надежды 13)умирать, гибнуть; теряться, пропадать; she is gone она погибла; она скончалась; my sight is going я теряю зрение 14)рухнуть, свалиться, сломаться, податься; the platform went трибуна обрушилась; first the sail and then the mast went сперва подался парус, а затем и мачта 15)потерпеть крах, обанкротиться; the bank may go any day крах банка ожидается со дня на день 16)отменяться, уничтожаться; this clause of the bill will have to go эта статья законопроекта должна быть выброшена 17)переходить в собственность, доставаться; the house went to the elder son дом достался старшему сыну 18)продаваться (по определённой цене - for); this goes for 1 shilling это стоит 1 шиллинг; to go cheap продаваться по дешёвой цене 19)подходить, быть под стать (чему-л.); the blue scarf goes well with your blouse этот голубой шарф хорошо подходит к вашей блузке 20)гласить, говорить (о тексте, статье) 21)сделать какое-л. движение; go like this with your left foot! сделай так левой ногой! 22)класть(ся), ставить(ся) на определённое место; постоянно храниться; where is this carpet to go? куда постелить этот ковёр? 23)умещаться, укладываться (во что-л.); six into twelve goes twice шесть в двенадцати содержится два раза; the thread is too thick to go into the needle эта нитка слишком толста, чтобы пролезть в иголку 24)глагол-связка в составном именном сказуемом означает: а) постоянно находиться в каком-л. положении или состоянии; to go hungry быть, ходить всегда голодным; to go in rags ходить в лохмотьях; б) делаться, становиться; to go mad (или mental) сойти с ума; to go sick захворать; to go bust разг. разориться; he goes hot and cold его бросает в жар и в холод 25)в сочетании с последующим герундием означает: чем-то часто или постоянно заниматься; he goes frightening people with his stories он постоянно пугает людей своими рассказами; to go hunting ходить на охоту 26)в обороте; be going inf. смыслового глагола выражает намерение совершить какое-л. действие в ближайшем будущем: I am going to speak to her я намереваюсь поговорить с ней; it is going to rain собирается дождь 27)to go to sea стать моряком; to go to school получать школьное образование; ходить в школу; to go on the stage стать актёром; to go on the streets стать проституткой; go about а) расхаживать, ходить туда и сюда; б) циркулировать, иметь хождение (о слухах; о деньгах); в) делать поворот кругом; г) мор. делать поворот оверштаг; go after а) искать; б) находить удовольствие в; go against противоречить, идти против (убеждений); go ahead а) двигаться вперёд; go ahead! вперёд!; продолжайте!; действуйте!; б) идти напролом; в) идти впереди (на состязании); go along а) двигаться; б) продолжать; в) сопровождать (with); go at разг. а) бросаться на кого-л.; б) энергично браться за что-л.; go away уходить, убираться; go back а) возвращаться; б) нарушить (обещание; слово - on, upon); в) отказаться (on, upon - от своих слов); г) изменить (друзьям - on, upon); go behind пересматривать, рассматривать заново, изучать (основания, данные); go between быть посредником между; go beyond превышать что-л.; go by а) проходить (о времени); б) проходить мимо; в) судить по; г) руководствоваться; I go by the barometer я руководствуюсь барометром; go down а) спускаться; опускаться; to go down in the world опуститься, потерять былое положение (в обществе); б) затонуть; в) садиться (о солнце); г) быть побеждённым; д) стихать (о ветре); е) быть приемлемым (для кого-л.); быть одобренным (with - кем-л.); go far into продолжаться долго; go for а) идти за чем-л.; б) стремиться к чему-л.; в) быть принятым за; г) разг. наброситься, обрушиться на; the speaker went for the profiteers оратор обрушился на спекулянтов; д) стоить, иметь цену; to go for nothing (something) ничего не стоить (коечто стоить); to go for a song идти за бесценок, ничего не стоить; go forth быть опубликованным; go in а) входить; б) участвовать (в состязании); в) затмиться (о солнце, луне); go in for а) ставить себе (что-л.) целью, добиваться (чего-л.); to go in for an examination экзаменоваться; б) увлекаться (чем-л.); to go in for sports заниматься спортом; to go in for collecting pictures заняться, увлечься коллекционированием картин; в) разг. выступать в пользу (кого-л., чего-л.); go in with объединяться, действовать совместно с кем-л.; присоединяться к кому-л.; go into а) входить; вступать; to go into Parliament стать членом парламента; б) часто бывать, посещать; в) впадать (в истерику и т.п.); приходить (в ярость); г) расследовать, тщательно рассматривать; go off а) убежать, сбежать; б) уходить со сцены; в) терять сознание; умирать; г) сойти, пройти; the concert went off well концерт прошёл хорошо; д) выстрелить (об оружии); перен. выпалить; е) ослабевать (о боли и т.п.); ж) стать хуже; испортиться (о мясе и т.п.); з) отделаться от чего-л.; сбыть, продать; go on а) (упорно) продолжать, идти дальше; б) длиться; for going on a year в течение года; в) разг. придираться, спорить; go on for приближаться к (о времени, возрасте); go out а) выйти; выходить; б) бывать в обществе; в) выйти в свет (о книге); г) выйти в отставку; д) выйти из моды; е) погаснуть; ж) кончаться (о месяце, годе); з) забастовать; и) ам. обрушиться; к) потерпеть неудачу; go over а) переходить (на другую сторону); б) переходить из одной партии в другую; переменить веру; в) перечитывать, повторять; г) изучать в деталях; д) превосходить; е) быть отложенным (о проекте закона); ж) хим. переходить, превращаться; з) опрокинуться (об экипаже); go round а) вращаться; the wheels go round колёса вращаются; б) приходить в гости запросто; в) обойти кругом, хватить на всех (за столом); go through а) тщательно разбирать пункт за пунктом; б) испытывать, подвергаться; в) упорствовать; г) обыскивать, обшаривать; д) проделывать; е) находить сбыт, рынок (о товаре); to go through several editions выдержать несколько изданий (о книге); ж) быть принятым (о проекте, предложении); з) проноситься (об одежде); go through with smth. довести что-л. до конца; go together сочетаться, гармонировать; go under а) тонуть; б) гибнуть; ам. умирать; в) исчезать; г) разоряться; д) не выдерживать (испытаний, страданий); е) заходить, закатываться (о солнце); go up а) подниматься; восходить (на гору); go up in smoke улетучиться; б) расти (о числе); повышаться (о ценах); apples have gone up яблоки подорожали; в) взорваться, сгореть; г) ам. разориться; go with а) сопровождать; б) быть заодно с кем-л.; в) подходить, гармонировать; согласовываться, соответствовать; go without обходиться без чего-л.; go about your business! разг. пошёл вон!, убирайся!; it will go hard with him ему трудно (или плохо) придётся; ему не поздоровится; to go by the name of а) быть известным под именем; б) быть связанным с чьим-л. именем; she is six months gone with the child она на шестом месяце беременности; to go off the deep end напиться; to go off the handle выйти из себя; to go all out напрячь все силы; to go to smb.'s heart печалить, огорчать кого-л.; to go a long way а) иметь большое значение, влияние (to, towards, with); б) хватать надолго (о деньгах); to go one better превзойти (соперника); to go right through идти напролом; to go round the bend терять равновесие; сходить с ума; to go rounds ходить по рукам; it goes without saying само собой разумеется; (it is true) as far as it goes (верно) поскольку дело касается этого; go along with you! убирайся!; be gone! проваливайте!; going fifteen на пятнадцатом году; he went and did it он взял и сделал это; to go down the drain разг. быть истраченным впустую (о деньгах); to go easy on smth. ам. быть тактичным в отношении чего-л.; to go on instruments вести (самолёт) по приборам 2. n. (pl. goes ) разг. 1) движение, ход, ходьба; to be on the go а) быть в движении, в работе; he is always on the go он вечно куда-то спешит; б) собираться уходить; в) быть пьяным; г) быть на склоне лет, на закате дней 2) энергия; воодушевление; рвение; full of go полон энергии 3) попытка; have a go (at) попытаться, рискнуть; let's have a go at it давайте попробуем 4) обстоятельство, положение; неожиданный поворот дел; here's a pretty go! ну и положеньице! 5) успех; успешное предприятие; to make a go of it ам. разг. добиться успеха; преуспеть; no go бесполезный; безнадёжный {см. тж. no go} 6) порция (кушанья); глоток (вина) 7) сделка; is it a go? идёт?; по рукам?; all (или quite) the go очень модно; предмет всеобщего увлечения; first go первым делом, сразу же; at a go сразу, зараз",
     "source": "mueller:go",
@@ -19422,8 +19258,8 @@
   },
   {
     "word": "grandparent",
-    "translation": "s",
-    "source": "mueller:line",
+    "translation": "дедушка или бабушка",
+    "source": "manual",
     "level": "A1",
     "pos": [
       "noun"
@@ -20095,8 +19931,8 @@
   },
   {
     "word": "hello",
-    "translation": "= hallo(a)",
-    "source": "mueller:hello",
+    "translation": "привет; здравствуйте",
+    "source": "manual",
     "level": "A1",
     "pos": [
       "exclamation",
@@ -20208,8 +20044,8 @@
   },
   {
     "word": "hers",
-    "translation": "pron. poss. (абсолютная форма; не употр. атрибутивно; ср. her II)",
-    "source": "mueller:hers",
+    "translation": "её (принадлежащий ей)",
+    "source": "manual",
     "level": "A2",
     "pos": [
       "pronoun"
@@ -20256,8 +20092,8 @@
   },
   {
     "word": "hi",
-    "translation": "= hey",
-    "source": "mueller:hi",
+    "translation": "привет",
+    "source": "manual",
     "level": "A1",
     "pos": [
       "exclamation"
@@ -21016,8 +20852,8 @@
   },
   {
     "word": "humor",
-    "translation": "ам. = humour",
-    "source": "mueller:humor",
+    "translation": "юмор; настроение",
+    "source": "manual",
     "level": null,
     "pos": [],
     "oxford_urls": [],
@@ -23148,8 +22984,8 @@
   },
   {
     "word": "irritated",
-    "translation": "e",
-    "source": "mueller:line",
+    "translation": "раздражённый",
+    "source": "manual",
     "level": null,
     "pos": [],
     "oxford_urls": [],
@@ -23492,8 +23328,8 @@
   },
   {
     "word": "judgment",
-    "translation": "= judgement",
-    "source": "mueller:judgment",
+    "translation": "суждение; мнение; приговор",
+    "source": "manual",
     "level": null,
     "pos": [],
     "oxford_urls": [],
@@ -23802,8 +23638,8 @@
   },
   {
     "word": "kilometer",
-    "translation": "ам. = kilometre",
-    "source": "mueller:kilometer",
+    "translation": "километр",
+    "source": "manual",
     "level": null,
     "pos": [],
     "oxford_urls": [],
@@ -23905,18 +23741,6 @@
     }
   },
   {
-    "word": "km",
-    "translation": "ɪ] n.",
-    "source": "mueller:line",
-    "level": null,
-    "pos": [],
-    "oxford_urls": [],
-    "audio": {
-      "uk": null,
-      "us": null
-    }
-  },
-  {
     "word": "knee",
     "translation": "1. n. 1) колено; up to one's knees по колено 2) тех. колено 3) мор. кница 4) стр. подкос, полураскос 5) наколенник 6) attr. коленный; to give (или to offer) a knee to smb. а) помогать кому-л.; оказывать кому-л. поддержку; б) спорт. быть чьим-л. секундантом (в боксе); it is on the knees of the gods одному богу известно; неведомо, неизвестно; to bring smb. to his knees поставить кого-л. на колени; to go on one's knees to smb. упрашивать, умолять кого-л.; on one's (bended) knees униженно; to learn smth. at one's mother's knees впитать с молоком матери 2. v. редк. 1) ударить коленом; касаться коленом 2) вытягиваться на коленях (о брюках) 3) становиться на колени",
     "source": "mueller:knee",
@@ -24011,18 +23835,6 @@
     }
   },
   {
-    "word": "l",
-    "translation": "l (pl. Ls, L's ) 1) 12-я буква англ. алфавита 2) что-л., имеющее форму буквы L",
-    "source": "mueller:L",
-    "level": null,
-    "pos": [],
-    "oxford_urls": [],
-    "audio": {
-      "uk": null,
-      "us": null
-    }
-  },
-  {
     "word": "label",
     "translation": "1. n. 1) ярлык (тж. перен.); этикетка; бирка 2) помета (в словаре) 3) архит. слезник 4) геод. алидада-высотомер 5) физ. меченый атом 2. v. 1) прикреплять или наклеивать ярлык 2) относить к какой-л. категории; перен. приклеивать ярлык 3) физ. метить (атом)",
     "source": "mueller:label",
@@ -24042,8 +23854,8 @@
   },
   {
     "word": "labor",
-    "translation": "ам. = labour",
-    "source": "mueller:labor",
+    "translation": "труд; работа; рабочая сила",
+    "source": "manual",
     "level": null,
     "pos": [],
     "oxford_urls": [],
@@ -25146,8 +24958,8 @@
   },
   {
     "word": "liter",
-    "translation": "ам. = litre",
-    "source": "mueller:liter",
+    "translation": "литр",
+    "source": "manual",
     "level": null,
     "pos": [],
     "oxford_urls": [],
@@ -26557,8 +26369,8 @@
   },
   {
     "word": "meanwhile",
-    "translation": "= meantime",
-    "source": "mueller:meanwhile",
+    "translation": "тем временем; между тем",
+    "source": "manual",
     "level": "B1",
     "pos": [
       "adverb"
@@ -26948,18 +26760,6 @@
     "oxford_urls": [
       "https://www.oxfordlearnersdictionaries.com/definition/english/method"
     ],
-    "audio": {
-      "uk": null,
-      "us": null
-    }
-  },
-  {
-    "word": "mg",
-    "translation": "yration",
-    "source": "mueller:line",
-    "level": null,
-    "pos": [],
-    "oxford_urls": [],
     "audio": {
       "uk": null,
       "us": null
@@ -27386,18 +27186,6 @@
     "oxford_urls": [
       "https://www.oxfordlearnersdictionaries.com/definition/english/mixture"
     ],
-    "audio": {
-      "uk": null,
-      "us": null
-    }
-  },
-  {
-    "word": "mm",
-    "translation": "ar грамматика",
-    "source": "mueller:line",
-    "level": null,
-    "pos": [],
-    "oxford_urls": [],
     "audio": {
       "uk": null,
       "us": null
@@ -29707,8 +29495,8 @@
   },
   {
     "word": "oh",
-    "translation": "см. O II",
-    "source": "mueller:oh",
+    "translation": "о!; ах! (восклицание)",
+    "source": "manual",
     "level": "A1",
     "pos": [
       "exclamation"
@@ -30389,8 +30177,8 @@
   },
   {
     "word": "ours",
-    "translation": "pron. poss. (абсолютная форма, не употр. атрибутивно; ср. our)",
-    "source": "mueller:ours",
+    "translation": "наш (принадлежащий нам)",
+    "source": "manual",
     "level": "B1",
     "pos": [
       "pronoun"
@@ -30700,18 +30488,6 @@
     "oxford_urls": [
       "https://www.oxfordlearnersdictionaries.com/definition/english/owner"
     ],
-    "audio": {
-      "uk": null,
-      "us": null
-    }
-  },
-  {
-    "word": "p",
-    "translation": "p n. (pl. Ps, P's ) 16-я буква англ. алфавита; to mind one's",
-    "source": "mueller:P",
-    "level": null,
-    "pos": [],
-    "oxford_urls": [],
     "audio": {
       "uk": null,
       "us": null
@@ -31579,8 +31355,8 @@
   },
   {
     "word": "percent",
-    "translation": "er",
-    "source": "mueller:line",
+    "translation": "процент",
+    "source": "manual",
     "level": null,
     "pos": [],
     "oxford_urls": [],
@@ -34631,18 +34407,6 @@
     "word": "provided",
     "translation": "I 1. p-p. от provide 2. a. 1) обеспеченный, снабжённый 2) предусмотренный; provided by the rules предусмотренный правилами 3) provided school начальная школа, которая состоит на местном бюджете II cj. (часто provided that) при условии, если только, в том случае, если",
     "source": "mueller:provided",
-    "level": null,
-    "pos": [],
-    "oxford_urls": [],
-    "audio": {
-      "uk": null,
-      "us": null
-    }
-  },
-  {
-    "word": "pt.",
-    "translation": "ics оптика",
-    "source": "mueller:line",
     "level": null,
     "pos": [],
     "oxford_urls": [],
@@ -41201,8 +40965,8 @@
   },
   {
     "word": "smoking",
-    "translation": "e",
-    "source": "mueller:line",
+    "translation": "курение",
+    "source": "manual",
     "level": "A2",
     "pos": [
       "noun"
@@ -45194,8 +44958,8 @@
   },
   {
     "word": "terribly",
-    "translation": "le fix",
-    "source": "mueller:line",
+    "translation": "ужасно; очень",
+    "source": "manual",
     "level": null,
     "pos": [
       "adverb"
@@ -45411,8 +45175,8 @@
   },
   {
     "word": "theater",
-    "translation": "ам. = theatre",
-    "source": "mueller:theater",
+    "translation": "театр",
+    "source": "manual",
     "level": null,
     "pos": [],
     "oxford_urls": [],
@@ -45439,8 +45203,8 @@
   },
   {
     "word": "theirs",
-    "translation": "pron. poss. (абсолютная форма; не употр. атрибутивно; ср. their)",
-    "source": "mueller:theirs",
+    "translation": "их (принадлежащий им)",
+    "source": "manual",
     "level": "B1",
     "pos": [
       "pronoun"
@@ -45599,8 +45363,8 @@
   },
   {
     "word": "thickly",
-    "translation": "= thick 3",
-    "source": "mueller:thickly",
+    "translation": "толсто; густо; плотно",
+    "source": "manual",
     "level": null,
     "pos": [],
     "oxford_urls": [],
@@ -46014,8 +45778,8 @@
   },
   {
     "word": "tightly",
-    "translation": "= tight 2",
-    "source": "mueller:tightly",
+    "translation": "плотно; туго; крепко",
+    "source": "manual",
     "level": null,
     "pos": [],
     "oxford_urls": [],
@@ -46347,8 +46111,8 @@
   },
   {
     "word": "tonight",
-    "translation": "= to-night 1. adv. сегодня вечером (реже ночью) 2. n. сегодняшний вечер, наступающая ночь",
-    "source": "mueller:tonight",
+    "translation": "сегодня вечером; сегодня ночью",
+    "source": "manual",
     "level": "A1",
     "pos": [
       "adverb",
@@ -47609,8 +47373,8 @@
   },
   {
     "word": "uncontrolled",
-    "translation": "able",
-    "source": "mueller:line",
+    "translation": "неконтролируемый; неуправляемый",
+    "source": "manual",
     "level": null,
     "pos": [],
     "oxford_urls": [],
@@ -47701,8 +47465,8 @@
   },
   {
     "word": "underwater",
-    "translation": "breathing apparatus)",
-    "source": "mueller:line",
+    "translation": "подводный; под водой",
+    "source": "manual",
     "level": null,
     "pos": [],
     "oxford_urls": [],
@@ -48189,8 +47953,8 @@
   },
   {
     "word": "until",
-    "translation": "= till I",
-    "source": "mueller:until",
+    "translation": "до; до тех пор пока (не)",
+    "source": "manual",
     "level": "A1",
     "pos": [
       "conjunction",
@@ -51256,8 +51020,8 @@
   },
   {
     "word": "yours",
-    "translation": "pron. poss. (абсолютная форма; не употр. атрибутивно; ср. your)",
-    "source": "mueller:yours",
+    "translation": "ваш; твой (принадлежащий вам)",
+    "source": "manual",
     "level": "A2",
     "pos": [
       "pronoun"

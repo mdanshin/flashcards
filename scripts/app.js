@@ -519,15 +519,23 @@ function pickNextCard() {
 function cleanGloss(chunk) {
   let c = (chunk || '').trim();
   let prev = null;
-  // Peel off leading abbreviations/labels that end in a dot (v. n. adv. книж. p-p.).
+  // Peel off leading abbreviations/labels ending in a dot (v. n. adv. книж. p-p.)
+  // and leading form notes in parentheses (e.g. "(began - begun)").
   while (c && c !== prev) {
     prev = c;
     c = c.replace(/^[a-zа-яё-]{1,6}\.\s+/i, '');
+    c = c.replace(/^\([^)]*\)\s*/, '');
   }
+  // The Russian gloss starts at the first Cyrillic character.
+  const cyr = c.match(/[а-яё]/i);
+  if (!cyr) return '';
+  c = c.slice(cyr.index);
   // Drop the trailing English example, keeping just the Russian gloss.
   const latin = c.match(/[A-Za-z]{2,}/);
   if (latin) c = c.slice(0, latin.index);
-  return c.replace(/^[\s;,.–-]+|[\s;,.–-]+$/g, '');
+  c = c.replace(/^[\s;,.–-]+|[\s;,.–-]+$/g, '');
+  // Skip stray single letters left over from OCR noise.
+  return c.length >= 2 ? c : '';
 }
 
 function parseSenses(text) {
