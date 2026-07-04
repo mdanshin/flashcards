@@ -1,0 +1,20 @@
+[Unit]
+Description=Flashcards API (imported Anki decks + progress)
+After=network.target
+
+[Service]
+Type=simple
+User=flashcards
+Group=flashcards
+WorkingDirectory=/opt/flashcards-api
+Environment=FLASHCARDS_DB=/opt/flashcards-api/data/app.db
+ExecStart=/opt/flashcards-api/venv/bin/uvicorn main:app --host 127.0.0.1 --port 8000
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
