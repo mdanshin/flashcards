@@ -402,6 +402,33 @@ function updateStats() {
     ? progress.cards[state.reviewQueue[0].word]?.due
     : null;
   elements.nextDue.textContent = nextDue ? new Date(nextDue).toLocaleString('ru-RU') : '—';
+
+  updateDailyLedger(newRemaining, learnt);
+}
+
+function updateDailyLedger(newRemaining, reviewsToday) {
+  if (!elements.dailyBar || !elements.dailyLabel) return;
+  const limit = Math.max(1, settings.dailyNewLimit);
+  const introduced = Math.min(limit, limit - newRemaining);
+  const percent = Math.round((introduced / limit) * 100);
+  elements.dailyBar.style.width = `${percent}%`;
+  const track = elements.dailyBar.parentElement;
+  if (track) {
+    track.setAttribute('aria-valuemin', '0');
+    track.setAttribute('aria-valuemax', String(limit));
+    track.setAttribute('aria-valuenow', String(introduced));
+  }
+  const reviewsWord = pluralizeReviews(reviewsToday);
+  elements.dailyLabel.textContent =
+    `${introduced} из ${limit} новых слов · ${reviewsToday} ${reviewsWord} за день`;
+}
+
+function pluralizeReviews(count) {
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+  if (mod10 === 1 && mod100 !== 11) return 'повторение';
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return 'повторения';
+  return 'повторений';
 }
 
 function pickNextCard() {
@@ -422,6 +449,27 @@ function pickNextCard() {
   return null;
 }
 
+const POS_ABBREV = /^[a-zа-я]{1,5}\.?$/i;
+
+function parseSenses(text) {
+  const trimmed = (text || '').trim();
+  if (!trimmed) return [];
+  // The Mueller dictionary marks senses as "1) … 2) …" — split on those.
+  if (/\s\d+\)/.test(` ${trimmed}`)) {
+    const parts = trimmed
+      .split(/\s*\b\d+\)\s*/)
+      .map((part) => part.trim())
+      .filter((part) => part && !POS_ABBREV.test(part));
+    if (parts.length) return parts;
+  }
+  // Otherwise fall back to semicolon-separated variants.
+  const parts = trimmed
+    .split(/;/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  return parts.length ? parts : [trimmed];
+}
+
 function renderCard() {
   const card = state.currentCard;
   const front = elements.cardFront;
@@ -435,8 +483,13 @@ function renderCard() {
   const audioControls = elements.audioControls;
 
   if (!card) {
-    frontTitle.textContent = 'Все карточки на сегодня разобраны!';
+    frontTitle.textContent = 'Колода разобрана';
     frontMeta.textContent = '';
+    if (metaBadges) metaBadges.innerHTML = '';
+    if (elements.cardMessage) {
+      elements.cardMessage.textContent =
+        'Все запланированные на сегодня карточки пройдены. Возвращайтесь завтра или увеличьте лимит новых слов в настройках.';
+    }
     backTitle.textContent = '';
     translationList.innerHTML = '';
     sources.innerHTML = '';
@@ -446,6 +499,10 @@ function renderCard() {
     elements.actionsContainer.classList.add('hidden');
     back.classList.add('hidden');
     return;
+  }
+
+  if (elements.cardMessage && elements.defaultCardMessage != null) {
+    elements.cardMessage.innerHTML = elements.defaultCardMessage;
   }
 
   elements.showAnswer.classList.toggle('hidden', state.showingAnswer);
@@ -467,8 +524,8 @@ function renderCard() {
   if (state.mode === 'en-ru') {
     frontTitle.textContent = card.word;
   } else {
-    const primary = card.translation.split(/;|\./)[0];
-    frontTitle.textContent = primary.trim();
+    const senses = parseSenses(card.translation);
+    frontTitle.textContent = senses[0] || card.translation;
   }
 
   metaBadges.innerHTML = '';
@@ -485,12 +542,11 @@ function renderCard() {
     metaBadges.appendChild(badge);
   }
 
-  backTitle.textContent = state.mode === 'en-ru' ? card.translation : card.word;
+  // The back is always the full dictionary entry for the English lemma.
+  backTitle.textContent = card.word;
   translationList.innerHTML = '';
-  const segments = card.translation
-    .split(/(?<=\.)\s+|;|\n/)
-    .map((segment) => segment.trim())
-    .filter(Boolean);
+  const segments = parseSenses(card.translation);
+  translationList.classList.toggle('single', segments.length <= 1);
   segments.forEach((segment) => {
     const li = document.createElement('li');
     li.textContent = segment;
@@ -963,11 +1019,17 @@ function initUI() {
   elements.sourceLinks = document.getElementById('sources');
   elements.audioControls = document.getElementById('audio-controls');
   elements.metaBadges = document.getElementById('meta-badges');
+  elements.cardMessage = document.querySelector('#card-front .card-message');
+  if (elements.cardMessage) {
+    elements.defaultCardMessage = elements.cardMessage.innerHTML;
+  }
   elements.statsDue = document.getElementById('stats-due');
   elements.statsNew = document.getElementById('stats-new');
   elements.statsStudied = document.getElementById('stats-studied');
   elements.statsTotal = document.getElementById('stats-total');
   elements.nextDue = document.getElementById('next-due');
+  elements.dailyBar = document.getElementById('daily-progress-bar');
+  elements.dailyLabel = document.getElementById('daily-progress-label');
   elements.history = document.getElementById('session-history');
   elements.searchInput = document.getElementById('search-input');
   elements.searchResults = document.getElementById('search-results');
