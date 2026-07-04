@@ -20,16 +20,29 @@
   </head>
 
   <body>
-    <header class="app-header">
-      <div class="masthead">
-        <p class="masthead-eyebrow">Тренажёр словарного запаса</p>
-        <h1 class="masthead-title">The&nbsp;Oxford&nbsp;3000</h1>
-        <p class="masthead-sub">
-          3207 самых полезных английских слов — с интервальными повторениями
-          в духе Anki. Прогресс живёт прямо в браузере.
-        </p>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">Ox</span>
+        <span class="brand-name">The&nbsp;Oxford&nbsp;3000</span>
       </div>
-      <div class="header-controls">
+
+      <div class="topbar-stats" id="topbar-stats" aria-label="Осталось на сегодня">
+        <span class="mini-stat"><b id="stats-due">0</b><span>к&nbsp;повтору</span></span>
+        <span class="mini-stat"><b id="stats-new">0</b><span>новых</span></span>
+      </div>
+
+      <div class="topbar-actions">
+        <button id="open-search" class="icon-btn" type="button" aria-label="Поиск по колоде" title="Поиск">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+        </button>
+        <button id="open-settings" class="icon-btn" type="button" aria-label="Настройки и статистика" title="Настройки">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
+            <line x1="4" y1="7" x2="20" y2="7" /><line x1="4" y1="12" x2="20" y2="12" /><line x1="4" y1="17" x2="20" y2="17" />
+            <circle cx="9" cy="7" r="2.5" fill="var(--surface)" /><circle cx="15" cy="12" r="2.5" fill="var(--surface)" /><circle cx="8" cy="17" r="2.5" fill="var(--surface)" />
+          </svg>
+        </button>
         <div class="auth-controls">
           <div id="auth-signed-in" class="auth-user hidden">
             <img id="auth-avatar" alt="" class="auth-avatar hidden" />
@@ -38,76 +51,94 @@
           </div>
           <div id="auth-signed-out" class="auth-signin"></div>
         </div>
-        <div class="header-buttons">
-          <button id="toggle-settings" class="ghost" type="button">Настройки</button>
-          <button id="reset-progress" class="danger" type="button">Сбросить</button>
-        </div>
-        <div id="auth-message" class="auth-message hidden"></div>
       </div>
     </header>
 
-    <div class="ledger" id="daily-ledger">
-      <div class="ledger-copy">
-        <span class="ledger-eyebrow">Сегодня</span>
-        <span class="ledger-label" id="daily-progress-label">Загрузка колоды…</span>
-      </div>
-      <div class="ledger-track" role="progressbar" aria-labelledby="daily-progress-label">
-        <div class="ledger-fill" id="daily-progress-bar"></div>
-      </div>
+    <div id="auth-message" class="auth-message hidden"></div>
+
+    <div class="daily-bar" role="progressbar" aria-labelledby="daily-progress-label" title="Дневной прогресс">
+      <div class="ledger-fill" id="daily-progress-bar"></div>
     </div>
 
-    <div class="layout">
-      <aside class="sidebar">
-        <section class="panel">
-          <h2 class="panel-title">Направление</h2>
+    <main class="study-area">
+      <article class="card" id="card">
+        <div class="card-face front" id="card-front">
+          <div class="card-meta">
+            <div id="meta-badges" class="badges"></div>
+            <div id="front-meta" class="meta"></div>
+          </div>
+          <div class="card-content">
+            <div id="front-title" class="prompt"></div>
+            <div class="card-message">
+              Нажмите «Показать ответ» или клавишу <kbd>Пробел</kbd>
+            </div>
+          </div>
+          <div class="card-footer">
+            <button id="show-answer" class="primary" type="button">Показать ответ</button>
+          </div>
+        </div>
+        <div class="card-face back hidden" id="card-back">
+          <div class="card-back-header">
+            <span class="back-eyebrow">Словарная статья</span>
+            <div id="audio-controls" class="audio-controls"></div>
+          </div>
+          <h2 id="back-title"></h2>
+          <ul id="translation-list" class="translation"></ul>
+          <div class="sources" id="sources"></div>
+        </div>
+      </article>
+
+      <div class="actions" id="answer-actions" role="group" aria-label="Оцените, насколько легко вспомнилось">
+        <button type="button" class="again" data-grade="0"><span class="grade-name">Снова</span><span class="grade-key">1</span></button>
+        <button type="button" class="hard" data-grade="1"><span class="grade-name">Трудно</span><span class="grade-key">2</span></button>
+        <button type="button" class="good" data-grade="2"><span class="grade-name">Хорошо</span><span class="grade-key">3</span></button>
+        <button type="button" class="easy" data-grade="3"><span class="grade-name">Легко</span><span class="grade-key">4</span></button>
+      </div>
+    </main>
+
+    <div class="scrim" id="scrim"></div>
+
+    <!-- Панель поиска -->
+    <aside class="drawer" id="search-drawer" aria-label="Поиск по колоде" aria-hidden="true">
+      <div class="drawer-head">
+        <h2 class="drawer-title">Поиск по колоде</h2>
+        <button class="icon-btn" type="button" data-close-drawer aria-label="Закрыть">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" /></svg>
+        </button>
+      </div>
+      <div class="drawer-body">
+        <input id="search-input" type="search" placeholder="Слово или перевод" autocomplete="off" />
+        <div id="search-results" class="search-results"></div>
+      </div>
+    </aside>
+
+    <!-- Панель настроек и статистики -->
+    <aside class="drawer" id="settings-drawer" aria-label="Настройки и статистика" aria-hidden="true">
+      <div class="drawer-head">
+        <h2 class="drawer-title">Настройки</h2>
+        <button class="icon-btn" type="button" data-close-drawer aria-label="Закрыть">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" /></svg>
+        </button>
+      </div>
+      <div class="drawer-body">
+        <section class="drawer-section">
+          <h3 class="drawer-label">Направление</h3>
           <div class="mode-toggle" role="group" aria-label="Направление перевода">
             <button type="button" data-mode="en-ru" class="active">EN&nbsp;→&nbsp;RU</button>
             <button type="button" data-mode="ru-en">RU&nbsp;→&nbsp;EN</button>
           </div>
         </section>
 
-        <section class="panel">
-          <h2 class="panel-title">Уровень CEFR</h2>
+        <section class="drawer-section">
+          <h3 class="drawer-label">Уровень CEFR</h3>
           <label class="field">
             <span class="field-label">Диапазон сложности</span>
             <select id="level-filter"></select>
           </label>
         </section>
 
-        <section class="panel stats">
-          <h2 class="panel-title">Статистика</h2>
-          <ul class="stat-grid">
-            <li class="stat">
-              <span class="stat-value" id="stats-due">0</span>
-              <span class="stat-label">К повторению</span>
-            </li>
-            <li class="stat">
-              <span class="stat-value" id="stats-new">0</span>
-              <span class="stat-label">Новых осталось</span>
-            </li>
-            <li class="stat">
-              <span class="stat-value" id="stats-studied">0</span>
-              <span class="stat-label">За сегодня</span>
-            </li>
-            <li class="stat">
-              <span class="stat-value" id="stats-total">0</span>
-              <span class="stat-label">Всего в колоде</span>
-            </li>
-          </ul>
-          <p class="stat-footnote">
-            <span class="stat-footnote-label">Ближайшая карточка</span>
-            <span id="next-due" class="stat-footnote-value">—</span>
-          </p>
-        </section>
-
-        <section class="panel">
-          <h2 class="panel-title">Поиск по колоде</h2>
-          <input id="search-input" type="search" placeholder="Слово или перевод" autocomplete="off" />
-          <div id="search-results" class="search-results"></div>
-        </section>
-
-        <section class="panel settings" id="settings-panel">
-          <h2 class="panel-title">Настройки</h2>
+        <section class="drawer-section">
+          <h3 class="drawer-label">Параметры повторения</h3>
           <form id="settings-form">
             <label class="field">
               <span class="field-label">Новых карточек в день</span>
@@ -130,60 +161,44 @@
               </select>
             </label>
           </form>
-          <p class="hint">
-            Гостям прогресс сохраняется локально в браузере, вошедшим через
-            Google — в облаке Firebase. Кнопка «Сбросить» очищает всё и начинает заново.
-          </p>
         </section>
-      </aside>
 
-      <main class="study-area">
-        <article class="card" id="card">
-          <div class="card-face front" id="card-front">
-            <div class="card-meta">
-              <div id="meta-badges" class="badges"></div>
-              <div id="front-meta" class="meta"></div>
-            </div>
-            <div class="card-content">
-              <div id="front-title" class="prompt"></div>
-              <div class="card-message">
-                Нажмите «Показать ответ» или клавишу <kbd>Пробел</kbd>
-              </div>
-            </div>
-            <div class="card-footer">
-              <button id="show-answer" class="primary" type="button">Показать ответ</button>
-            </div>
-          </div>
-          <div class="card-face back hidden" id="card-back">
-            <div class="card-back-header">
-              <span class="back-eyebrow">Словарная статья</span>
-              <div id="audio-controls" class="audio-controls"></div>
-            </div>
-            <h2 id="back-title"></h2>
-            <ul id="translation-list" class="translation"></ul>
-            <div class="sources" id="sources"></div>
-          </div>
-        </article>
+        <section class="drawer-section">
+          <h3 class="drawer-label">Статистика</h3>
+          <ul class="stat-grid">
+            <li class="stat">
+              <span class="stat-value" id="stats-studied">0</span>
+              <span class="stat-label">За сегодня</span>
+            </li>
+            <li class="stat">
+              <span class="stat-value" id="stats-total">0</span>
+              <span class="stat-label">Всего в колоде</span>
+            </li>
+          </ul>
+          <p class="stat-footnote">
+            <span class="stat-footnote-label">Ближайшая карточка</span>
+            <span id="next-due" class="stat-footnote-value">—</span>
+          </p>
+          <p class="daily-summary" id="daily-progress-label">Сегодня</p>
+        </section>
 
-        <div class="actions" id="answer-actions" role="group" aria-label="Оцените, насколько легко вспомнилось">
-          <button type="button" class="again" data-grade="0"><span class="grade-name">Снова</span><span class="grade-key">1</span></button>
-          <button type="button" class="hard" data-grade="1"><span class="grade-name">Трудно</span><span class="grade-key">2</span></button>
-          <button type="button" class="good" data-grade="2"><span class="grade-name">Хорошо</span><span class="grade-key">3</span></button>
-          <button type="button" class="easy" data-grade="3"><span class="grade-name">Легко</span><span class="grade-key">4</span></button>
-        </div>
-
-        <section class="panel history">
-          <h2 class="panel-title">История сессии</h2>
+        <section class="drawer-section">
+          <h3 class="drawer-label">История сессии</h3>
           <ul id="session-history"></ul>
           <p class="history-empty" id="history-empty">Здесь появятся оценённые карточки.</p>
         </section>
-      </main>
-    </div>
 
-    <footer class="app-footer">
-      <span>The Oxford 3000™ · Oxford University Press</span>
-      <span>Переводы: словарь Мюллера · Интервальные повторения: алгоритм в духе Anki</span>
-    </footer>
+        <section class="drawer-section">
+          <button id="reset-progress" class="danger block" type="button">Сбросить прогресс</button>
+          <p class="hint">
+            Гостям прогресс хранится локально в браузере, вошедшим через Google —
+            в облаке. Сброс очищает всё и начинает заново.
+          </p>
+        </section>
+
+        <p class="drawer-about">The Oxford 3000™ · Oxford University Press · переводы: словарь Мюллера</p>
+      </div>
+    </aside>
 
     <script
       src="https://accounts.google.com/gsi/client"

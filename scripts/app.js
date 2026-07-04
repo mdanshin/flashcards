@@ -805,12 +805,22 @@ function handleSearch(event) {
   state.searchTerm = term;
   elements.searchResults.innerHTML = '';
   if (!term) return;
-  const matches = cards.filter((card) => {
-    return (
-      card.word.toLowerCase().includes(term) ||
-      card.translation.toLowerCase().includes(term)
-    );
-  }).slice(0, 20);
+  // Rank word matches above translation-only matches, exact/prefix first, so a
+  // query like "time" surfaces the word itself before phrases that mention it.
+  const scored = [];
+  for (const card of cards) {
+    const word = card.word.toLowerCase();
+    const inWord = word.includes(term);
+    const inTranslation = card.translation.toLowerCase().includes(term);
+    if (!inWord && !inTranslation) continue;
+    let score = 3;
+    if (word === term) score = 0;
+    else if (word.startsWith(term)) score = 1;
+    else if (inWord) score = 2;
+    scored.push({ card, score });
+  }
+  scored.sort((a, b) => a.score - b.score || a.card.word.localeCompare(b.card.word));
+  const matches = scored.slice(0, 20).map((item) => item.card);
   if (!matches.length) {
     const empty = document.createElement('div');
     empty.className = 'search-empty';
@@ -821,7 +831,7 @@ function handleSearch(event) {
   matches.forEach((card) => {
     const button = document.createElement('button');
     button.className = 'search-result';
-    const preview = card.translation.split(/;|\./)[0].trim();
+    const preview = parseSenses(card.translation)[0] || card.translation;
     button.innerHTML = `<strong>${card.word}</strong><span>${preview}</span>`;
     button.addEventListener('click', () => {
       state.currentCard = card;
@@ -830,6 +840,7 @@ function handleSearch(event) {
       renderCard();
       elements.searchResults.innerHTML = '';
       elements.searchInput.value = '';
+      closeDrawers();
     });
     elements.searchResults.appendChild(button);
   });
@@ -1075,6 +1086,47 @@ async function initAuth() {
   setupGoogleSignIn();
 }
 
+function openDrawer(id, focusSelector) {
+  closeDrawers();
+  const drawer = document.getElementById(id);
+  if (!drawer) return;
+  drawer.classList.add('open');
+  drawer.setAttribute('aria-hidden', 'false');
+  if (elements.scrim) elements.scrim.classList.add('open');
+  document.body.classList.add('drawer-open');
+  if (focusSelector) {
+    const target = drawer.querySelector(focusSelector);
+    if (target) window.requestAnimationFrame(() => target.focus());
+  }
+}
+
+function closeDrawers() {
+  document.querySelectorAll('.drawer.open').forEach((drawer) => {
+    drawer.classList.remove('open');
+    drawer.setAttribute('aria-hidden', 'true');
+  });
+  if (elements.scrim) elements.scrim.classList.remove('open');
+  document.body.classList.remove('drawer-open');
+}
+
+function setupDrawers() {
+  if (elements.openSettings) {
+    elements.openSettings.addEventListener('click', () => openDrawer('settings-drawer'));
+  }
+  if (elements.openSearch) {
+    elements.openSearch.addEventListener('click', () => openDrawer('search-drawer', '#search-input'));
+  }
+  document.querySelectorAll('[data-close-drawer]').forEach((button) => {
+    button.addEventListener('click', closeDrawers);
+  });
+  if (elements.scrim) {
+    elements.scrim.addEventListener('click', closeDrawers);
+  }
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') closeDrawers();
+  });
+}
+
 function initUI() {
   elements.modeButtons = Array.from(document.querySelectorAll('[data-mode]'));
   elements.levelSelect = document.getElementById('level-filter');
@@ -1103,9 +1155,10 @@ function initUI() {
   elements.history = document.getElementById('session-history');
   elements.searchInput = document.getElementById('search-input');
   elements.searchResults = document.getElementById('search-results');
-  elements.settingsPanel = document.getElementById('settings-panel');
-  elements.settingsToggle = document.getElementById('toggle-settings');
   elements.resetButton = document.getElementById('reset-progress');
+  elements.scrim = document.getElementById('scrim');
+  elements.openSettings = document.getElementById('open-settings');
+  elements.openSearch = document.getElementById('open-search');
   elements.authSignedIn = document.getElementById('auth-signed-in');
   elements.authSignedOut = document.getElementById('auth-signed-out');
   elements.authAvatar = document.getElementById('auth-avatar');
@@ -1141,9 +1194,7 @@ function initUI() {
   });
 
   elements.searchInput.addEventListener('input', handleSearch);
-  elements.settingsToggle.addEventListener('click', () => {
-    elements.settingsPanel.classList.toggle('open');
-  });
+  setupDrawers();
   elements.resetButton.addEventListener('click', () => {
     resetProgress().catch((error) => console.error('Failed to reset progress', error));
   });
@@ -1154,6 +1205,9 @@ function initUI() {
   }
 
   document.addEventListener('keydown', (event) => {
+    if (document.body.classList.contains('drawer-open')) {
+      return;
+    }
     if (event.target && ['INPUT', 'TEXTAREA'].includes(event.target.tagName)) {
       return;
     }
