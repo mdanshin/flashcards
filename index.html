@@ -121,7 +121,24 @@
         </button>
       </div>
       <div class="drawer-body">
-        <section class="drawer-section">
+        <section class="drawer-section" id="section-decks">
+          <h3 class="drawer-label">Колода</h3>
+          <label class="field">
+            <span class="field-label">Активная колода</span>
+            <select id="deck-select"></select>
+          </label>
+          <div class="deck-actions">
+            <label class="import-btn" id="import-label">
+              <input type="file" id="apkg-input" accept=".apkg,application/zip" hidden />
+              <span>Импорт .apkg</span>
+            </label>
+            <button id="delete-deck" class="danger small hidden" type="button">Удалить колоду</button>
+          </div>
+          <p class="import-status" id="import-status"></p>
+          <p class="hint" id="decks-hint"></p>
+        </section>
+
+        <section class="drawer-section" id="section-direction">
           <h3 class="drawer-label">Направление</h3>
           <div class="mode-toggle" role="group" aria-label="Направление перевода">
             <button type="button" data-mode="en-ru" class="active">EN&nbsp;→&nbsp;RU</button>
@@ -129,7 +146,7 @@
           </div>
         </section>
 
-        <section class="drawer-section">
+        <section class="drawer-section" id="section-level">
           <h3 class="drawer-label">Уровень CEFR</h3>
           <label class="field">
             <span class="field-label">Диапазон сложности</span>

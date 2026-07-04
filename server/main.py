@@ -140,6 +140,12 @@ def parse_apkg(file_bytes: bytes):
     names = zf.namelist()
     dbname = next((n for n in ("collection.anki21", "collection.anki2") if n in names), None)
     if not dbname:
+        if "collection.anki21b" in names:
+            raise HTTPException(
+                400,
+                "Новый формат Anki. При экспорте в Anki включите «Support older "
+                "Anki versions» и загрузите файл заново.",
+            )
         raise HTTPException(400, "в .apkg нет базы коллекции")
 
     tmp = None

@@ -38,6 +38,87 @@ function getProgressFromLocalStorage() {
   return loadProgressFromLocalStorage();
 }
 
+// Backend for imported Anki decks (progress synced by Firebase uid).
+const API_BASE = 'https://api.danshin.ms';
+const OXFORD_DECK_ID = 'oxford';
+
+let oxfordCards = [];
+let importedDecks = [];
+let activeDeckId = OXFORD_DECK_ID;
+
+function isOxfordDeck() {
+  return activeDeckId === OXFORD_DECK_ID;
+}
+
+function cardKey(card) {
+  return card.key || card.word;
+}
+
+async function apiToken() {
+  const user = firebaseAuth.currentUser;
+  if (!user) throw new Error('not-signed-in');
+  return user.getIdToken();
+}
+
+async function apiFetch(path, options = {}) {
+  const token = await apiToken();
+  const res = await fetch(API_BASE + path, {
+    ...options,
+    headers: { ...(options.headers || {}), Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(text || `API ${res.status}`);
+  }
+  return res.status === 204 ? null : res.json();
+}
+
+function apiListDecks() {
+  return apiFetch('/api/decks');
+}
+
+async function apiImportDeck(file) {
+  const token = await apiToken();
+  const form = new FormData();
+  form.append('file', file);
+  const res = await fetch(`${API_BASE}/api/decks/import`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  });
+  if (!res.ok) {
+    let detail = `API ${res.status}`;
+    try {
+      const body = await res.json();
+      detail = body.detail || detail;
+    } catch (err) {
+      /* keep default */
+    }
+    throw new Error(detail);
+  }
+  return res.json();
+}
+
+function apiGetDeck(id) {
+  return apiFetch(`/api/decks/${id}`);
+}
+
+function apiDeleteDeck(id) {
+  return apiFetch(`/api/decks/${id}`, { method: 'DELETE' });
+}
+
+function apiGetDeckProgress(id) {
+  return apiFetch(`/api/decks/${id}/progress`);
+}
+
+function apiPutDeckProgress(id, data) {
+  return apiFetch(`/api/decks/${id}/progress`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ data }),
+  });
+}
+
 const SETTINGS_KEY = 'oxford3000-settings-v1';
 const DEFAULT_SETTINGS = {
   dailyNewLimit: 20,
@@ -119,10 +200,11 @@ function createEmptyProgress() {
 }
 
 function getProgressStorageKey() {
+  const deckSuffix = isOxfordDeck() ? '' : `::deck-${activeDeckId}`;
   if (currentUser?.id) {
-    return `${STORAGE_KEY}::${currentUser.id}`;
+    return `${STORAGE_KEY}::${currentUser.id}${deckSuffix}`;
   }
-  return STORAGE_KEY;
+  return `${STORAGE_KEY}${deckSuffix}`;
 }
 
 function isSignedIn() {
@@ -184,6 +266,29 @@ async function loadProgress() {
   progress = createEmptyProgress();
   state.history = [];
 
+  if (!isOxfordDeck()) {
+    // Imported decks live on our API, cached locally.
+    progress = storedProgress?.cards ? storedProgress : createEmptyProgress();
+    if (isSignedIn()) {
+      try {
+        const data = await apiGetDeckProgress(activeDeckId);
+        if (data?.progress?.cards && data?.progress?.meta) {
+          progress = data.progress;
+          state.history = Array.isArray(data.history) ? data.history.slice(0, 100) : [];
+          saveProgressToLocalStorage();
+        }
+        showAuthMessage('');
+      } catch (error) {
+        console.error('Failed to load deck progress', error);
+        showAuthMessage('Не удалось загрузить прогресс колоды из облака');
+      }
+    }
+    ensureProgressForToday();
+    state.history = state.history.slice(0, 12);
+    renderHistory();
+    return;
+  }
+
   if (isSignedIn()) {
     try {
       const docRef = doc(firestore, 'progress', currentUser.id);
@@ -239,6 +344,23 @@ async function loadProgress() {
 }
 
 async function persistProgress() {
+  if (!isOxfordDeck()) {
+    saveProgressToLocalStorage();
+    if (isSignedIn()) {
+      try {
+        await apiPutDeckProgress(activeDeckId, {
+          progress,
+          history: state.history.slice(0, 100),
+        });
+        showAuthMessage('');
+      } catch (error) {
+        console.error('Failed to save deck progress', error);
+        showAuthMessage('Не удалось синхронизировать прогресс колоды с облаком');
+      }
+    }
+    return;
+  }
+
   if (isSignedIn()) {
     try {
       const docRef = doc(firestore, 'progress', currentUser.id);
@@ -418,12 +540,15 @@ function matchesLevel(card, level) {
 
 function buildQueues() {
   const now = Date.now();
-  filteredCards = cards.filter((card) => matchesLevel(card, state.level));
+  // The CEFR level filter only applies to the Oxford deck.
+  filteredCards = isOxfordDeck()
+    ? cards.filter((card) => matchesLevel(card, state.level))
+    : cards.slice();
   const review = [];
   const fresh = [];
 
   for (const card of filteredCards) {
-    const entry = progress.cards[card.word];
+    const entry = progress.cards[cardKey(card)];
     if (!entry) {
       fresh.push(card);
       continue;
@@ -436,8 +561,8 @@ function buildQueues() {
   }
 
   review.sort((a, b) => {
-    const dueA = progress.cards[a.word]?.due ?? 0;
-    const dueB = progress.cards[b.word]?.due ?? 0;
+    const dueA = progress.cards[cardKey(a)]?.due ?? 0;
+    const dueB = progress.cards[cardKey(b)]?.due ?? 0;
     return dueA - dueB;
   });
 
@@ -462,7 +587,7 @@ function updateStats() {
   elements.statsStudied.textContent = formatter.format(learnt);
   elements.statsTotal.textContent = formatter.format(cards.length);
   const nextDue = state.reviewQueue.length
-    ? progress.cards[state.reviewQueue[0].word]?.due
+    ? progress.cards[cardKey(state.reviewQueue[0])]?.due
     : null;
   elements.nextDue.textContent = nextDue ? new Date(nextDue).toLocaleString('ru-RU') : '—';
 
@@ -594,11 +719,8 @@ function renderCard() {
   elements.actionsContainer.classList.toggle('hidden', !state.showingAnswer);
   elements.actionsContainer.classList.toggle('disabled', !state.showingAnswer);
 
-  const level = card.level ? card.level.toUpperCase() : null;
-  const parts = (card.pos || []).join(', ');
-  // Only the study status here — level and part of speech are already shown
-  // as badges on the other side of the meta row.
-  const entry = progress.cards[card.word];
+  // Study status — the same for any deck.
+  const entry = progress.cards[cardKey(card)];
   if (!entry || !entry.seen) {
     frontMeta.textContent = 'Новая';
   } else if (entry.state === 'learning' || entry.state === 'relearning') {
@@ -607,48 +729,55 @@ function renderCard() {
     frontMeta.textContent = 'Повтор';
   }
 
-  if (state.mode === 'en-ru') {
-    frontTitle.textContent = card.word;
-  } else {
-    const senses = parseSenses(card.translation);
-    frontTitle.textContent = senses[0] || card.translation;
-  }
-
   metaBadges.innerHTML = '';
-  if (level) {
-    const badge = document.createElement('span');
-    badge.className = 'badge';
-    badge.textContent = level;
-    metaBadges.appendChild(badge);
-  }
-  if (parts) {
-    const badge = document.createElement('span');
-    badge.className = 'badge';
-    badge.textContent = parts;
-    metaBadges.appendChild(badge);
-  }
-
-  // The back is always the full dictionary entry for the English lemma.
-  backTitle.textContent = card.word;
   translationList.innerHTML = '';
-  const segments = parseSenses(card.translation);
-  translationList.classList.toggle('single', segments.length <= 1);
-  segments.forEach((segment) => {
-    const li = document.createElement('li');
-    li.textContent = segment;
-    translationList.appendChild(li);
-  });
-
   sources.innerHTML = '';
-  if (card.oxford_urls && card.oxford_urls.length) {
-    card.oxford_urls.slice(0, 2).forEach((url) => {
-      const link = document.createElement('a');
-      link.href = url;
-      link.target = '_blank';
-      link.rel = 'noopener';
-      link.textContent = 'Oxford';
-      sources.appendChild(link);
+
+  if (card.imported) {
+    // Generic front/back card from an imported Anki deck.
+    frontTitle.textContent = card.word;
+    backTitle.textContent = card.translation;
+    translationList.classList.add('single');
+  } else {
+    const level = card.level ? card.level.toUpperCase() : null;
+    const parts = (card.pos || []).join(', ');
+    if (state.mode === 'en-ru') {
+      frontTitle.textContent = card.word;
+    } else {
+      const senses = parseSenses(card.translation);
+      frontTitle.textContent = senses[0] || card.translation;
+    }
+    if (level) {
+      const badge = document.createElement('span');
+      badge.className = 'badge';
+      badge.textContent = level;
+      metaBadges.appendChild(badge);
+    }
+    if (parts) {
+      const badge = document.createElement('span');
+      badge.className = 'badge';
+      badge.textContent = parts;
+      metaBadges.appendChild(badge);
+    }
+    // The back is the full dictionary entry for the English lemma.
+    backTitle.textContent = card.word;
+    const segments = parseSenses(card.translation);
+    translationList.classList.toggle('single', segments.length <= 1);
+    segments.forEach((segment) => {
+      const li = document.createElement('li');
+      li.textContent = segment;
+      translationList.appendChild(li);
     });
+    if (card.oxford_urls && card.oxford_urls.length) {
+      card.oxford_urls.slice(0, 2).forEach((url) => {
+        const link = document.createElement('a');
+        link.href = url;
+        link.target = '_blank';
+        link.rel = 'noopener';
+        link.textContent = 'Oxford';
+        sources.appendChild(link);
+      });
+    }
   }
 
   audioControls.innerHTML = '';
@@ -833,7 +962,7 @@ function scheduleLearningWakeup() {
   const now = Date.now();
   let soonest = Infinity;
   for (const card of filteredCards) {
-    const entry = progress.cards[card.word];
+    const entry = progress.cards[cardKey(card)];
     if (entry && entry.due > now && (entry.state === 'learning' || entry.state === 'relearning')) {
       if (entry.due < soonest) soonest = entry.due;
     }
@@ -862,7 +991,7 @@ function gradeCard(grade) {
   const card = state.currentCard;
   const now = Date.now();
   const today = getTodayKey();
-  const entry = normalizeEntry(progress.cards[card.word], now);
+  const entry = normalizeEntry(progress.cards[cardKey(card)], now);
 
   if (progress.meta.lastReviewDay !== today) {
     progress.meta.lastReviewDay = today;
@@ -881,7 +1010,7 @@ function gradeCard(grade) {
   applyGrade(entry, grade, now);
 
   entry.lastReview = now;
-  progress.cards[card.word] = entry;
+  progress.cards[cardKey(card)] = entry;
   saveProgress();
 
   state.history.unshift({
@@ -989,7 +1118,7 @@ function handleSearch(event) {
     button.innerHTML = `<strong>${card.word}</strong><span>${preview}</span>`;
     button.addEventListener('click', () => {
       state.currentCard = card;
-      state.currentKind = progress.cards[card.word] ? 'review' : 'new';
+      state.currentKind = progress.cards[cardKey(card)] ? 'review' : 'new';
       state.showingAnswer = false;
       renderCard();
       elements.searchResults.innerHTML = '';
@@ -1024,15 +1153,15 @@ async function resetProgress() {
   if (!confirm('Удалить прогресс и начать заново?')) return;
 
   try {
-    if (isSignedIn()) {
-      const docRef = doc(firestore, 'progress', currentUser.id);
-      await deleteDoc(docRef);
-      showAuthMessage('');
-    } else {
-      localStorage.removeItem(getProgressStorageKey());
+    localStorage.removeItem(getProgressStorageKey());
+    // Only the Oxford deck lives in Firestore; imported decks are reset by
+    // writing an empty progress blob back through the API (saveProgress below).
+    if (isOxfordDeck() && isSignedIn()) {
+      await deleteDoc(doc(firestore, 'progress', currentUser.id));
     }
+    showAuthMessage('');
   } catch (error) {
-    console.error('Failed to reset progress in Firebase', error);
+    console.error('Failed to reset progress', error);
     showAuthMessage('Не удалось очистить данные в облаке');
   }
 
@@ -1091,11 +1220,18 @@ function maybePromptOneTap() {
 }
 
 async function handleUserChange() {
+  // Imported decks belong to a signed-in user; drop back to Oxford on sign-out.
+  if (!isSignedIn() && !isOxfordDeck()) {
+    activeDeckId = OXFORD_DECK_ID;
+    cards = oxfordCards;
+    updateDeckUI();
+  }
   await loadProgress();
   if (cards.length) {
     buildQueues();
     showNextCard();
   }
+  loadImportedDecks().catch((error) => console.error('Failed to list decks', error));
 }
 
 function setCurrentUser(user, { forceReload = false } = {}) {
@@ -1308,6 +1444,14 @@ function initUI() {
   elements.authName = document.getElementById('auth-name');
   elements.authSignOut = document.getElementById('auth-signout');
   elements.authMessage = document.getElementById('auth-message');
+  elements.deckSelect = document.getElementById('deck-select');
+  elements.apkgInput = document.getElementById('apkg-input');
+  elements.importLabel = document.getElementById('import-label');
+  elements.importStatus = document.getElementById('import-status');
+  elements.deleteDeck = document.getElementById('delete-deck');
+  elements.decksHint = document.getElementById('decks-hint');
+  elements.sectionDirection = document.getElementById('section-direction');
+  elements.sectionLevel = document.getElementById('section-level');
 
   const settingsForm = document.getElementById('settings-form');
   settingsForm.dailyNewLimit.value = settings.dailyNewLimit;
@@ -1338,6 +1482,14 @@ function initUI() {
 
   elements.searchInput.addEventListener('input', handleSearch);
   setupDrawers();
+  if (elements.deckSelect) elements.deckSelect.addEventListener('change', handleDeckSelect);
+  if (elements.apkgInput) elements.apkgInput.addEventListener('change', handleImportApkg);
+  if (elements.deleteDeck) {
+    elements.deleteDeck.addEventListener('click', () => {
+      deleteActiveDeck().catch((error) => console.error('Failed to delete deck', error));
+    });
+  }
+  renderDeckOptions();
   elements.resetButton.addEventListener('click', () => {
     resetProgress().catch((error) => console.error('Failed to reset progress', error));
   });
@@ -1386,14 +1538,143 @@ function initUI() {
   handleModeChange(state.mode);
 }
 
+// --- Deck management (Oxford built-in + imported .apkg decks) ----------------
+function renderDeckOptions() {
+  const select = elements.deckSelect;
+  if (!select) return;
+  select.innerHTML = '';
+  const oxfordOption = document.createElement('option');
+  oxfordOption.value = OXFORD_DECK_ID;
+  oxfordOption.textContent = 'The Oxford 3000';
+  select.appendChild(oxfordOption);
+  importedDecks.forEach((deck) => {
+    const option = document.createElement('option');
+    option.value = String(deck.id);
+    option.textContent = `${deck.name} (${deck.count})`;
+    select.appendChild(option);
+  });
+  select.value = String(activeDeckId);
+  updateDeckUI();
+}
+
+function updateDeckUI() {
+  const oxford = isOxfordDeck();
+  if (elements.sectionDirection) elements.sectionDirection.classList.toggle('hidden', !oxford);
+  if (elements.sectionLevel) elements.sectionLevel.classList.toggle('hidden', !oxford);
+  if (elements.deleteDeck) elements.deleteDeck.classList.toggle('hidden', oxford);
+  if (elements.importLabel) elements.importLabel.classList.toggle('disabled', !isSignedIn());
+  if (elements.decksHint) {
+    elements.decksHint.textContent = isSignedIn()
+      ? 'Импортируйте колоду Anki (.apkg) — берутся лицо и оборот карточек.'
+      : 'Войдите через Google, чтобы импортировать и синхронизировать свои колоды.';
+  }
+  if (elements.deckSelect) elements.deckSelect.value = String(activeDeckId);
+}
+
+function setImportStatus(message, isError) {
+  if (!elements.importStatus) return;
+  elements.importStatus.textContent = message || '';
+  elements.importStatus.classList.toggle('error', Boolean(isError));
+}
+
+async function loadImportedDecks() {
+  if (!isSignedIn()) {
+    importedDecks = [];
+    renderDeckOptions();
+    return;
+  }
+  try {
+    importedDecks = await apiListDecks();
+  } catch (error) {
+    console.error('Failed to list decks', error);
+    importedDecks = [];
+  }
+  renderDeckOptions();
+}
+
+async function switchDeck(deckId) {
+  activeDeckId = deckId;
+  if (isOxfordDeck()) {
+    cards = oxfordCards;
+  } else {
+    try {
+      const deck = await apiGetDeck(deckId);
+      cards = (deck.cards || []).map((card) => ({
+        key: `imp-${card.id}`,
+        word: card.front,
+        translation: card.back,
+        level: null,
+        pos: [],
+        oxford_urls: [],
+        audio: {},
+        imported: true,
+      }));
+    } catch (error) {
+      console.error('Failed to load deck', error);
+      showAuthMessage('Не удалось загрузить колоду');
+      activeDeckId = OXFORD_DECK_ID;
+      cards = oxfordCards;
+    }
+  }
+  updateDeckUI();
+  await loadProgress();
+  state.currentCard = null;
+  state.showingAnswer = false;
+  buildQueues();
+  showNextCard();
+}
+
+function handleDeckSelect(event) {
+  switchDeck(event.target.value).catch((error) => console.error('Failed to switch deck', error));
+}
+
+async function handleImportApkg(event) {
+  const file = event.target.files && event.target.files[0];
+  event.target.value = '';
+  if (!file) return;
+  if (!isSignedIn()) {
+    setImportStatus('Сначала войдите через Google', true);
+    return;
+  }
+  setImportStatus('Импорт…');
+  try {
+    const result = await apiImportDeck(file);
+    await loadImportedDecks();
+    setImportStatus(`Готово: «${result.name}», ${result.count} карточек`);
+    await switchDeck(result.id);
+  } catch (error) {
+    console.error('Import failed', error);
+    setImportStatus(`Ошибка импорта: ${error.message}`, true);
+  }
+}
+
+async function deleteActiveDeck() {
+  if (isOxfordDeck()) return;
+  const deck = importedDecks.find((item) => String(item.id) === String(activeDeckId));
+  const name = deck ? deck.name : 'эту колоду';
+  if (!confirm(`Удалить колоду «${name}» и весь прогресс по ней?`)) return;
+  try {
+    localStorage.removeItem(getProgressStorageKey());
+    await apiDeleteDeck(activeDeckId);
+  } catch (error) {
+    console.error('Delete failed', error);
+    showAuthMessage('Не удалось удалить колоду');
+    return;
+  }
+  await loadImportedDecks();
+  await switchDeck(OXFORD_DECK_ID);
+}
+
 async function bootstrap() {
   loadSettings();
   initUI();
   await initAuth();
   const response = await fetch(DATA_URL);
-  cards = await response.json();
+  oxfordCards = await response.json();
+  cards = oxfordCards;
   buildQueues();
   showNextCard();
+  loadImportedDecks().catch((error) => console.error('Failed to list decks', error));
 }
 
 bootstrap().catch((error) => {

@@ -961,6 +961,52 @@ input[type="search"]:focus {
   margin: 0;
 }
 
+/* Deck management */
+.deck-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.import-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 10px;
+  background: var(--oxford);
+  color: #fff;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(11, 61, 107, 0.25);
+  transition: background 0.14s ease, transform 0.14s ease;
+}
+.import-btn:hover {
+  background: var(--oxford-strong);
+  transform: translateY(-1px);
+}
+.import-btn::before {
+  content: "↥";
+  font-size: 1rem;
+  line-height: 1;
+}
+.import-btn.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.import-status {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  min-height: 1.1em;
+}
+.import-status.error {
+  color: var(--danger);
+}
+
 /* Session history */
 #session-history {
   list-style: none;
