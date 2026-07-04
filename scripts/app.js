@@ -79,6 +79,7 @@ let settings = { ...DEFAULT_SETTINGS };
 
 let currentUser = null;
 let googleInitialized = false;
+let authSettled = false;
 let saveDebounceTimer = null;
 let keepAuthMessage = false;
 let manualGoogleButton = null;
@@ -849,9 +850,16 @@ function updateAuthUI() {
       elements.authAvatar.removeAttribute('src');
       elements.authAvatar.classList.add('hidden');
     }
-    if (googleInitialized && window.google?.accounts?.id) {
-      window.google.accounts.id.prompt();
-    }
+  }
+}
+
+// Show the Google One Tap prompt only once Firebase has confirmed the user is
+// genuinely signed out — otherwise it flashes on every reload while the
+// persisted session is still being restored.
+function maybePromptOneTap() {
+  if (!authSettled || isSignedIn()) return;
+  if (googleInitialized && window.google?.accounts?.id) {
+    window.google.accounts.id.prompt();
   }
 }
 
@@ -964,9 +972,7 @@ function setupGoogleSignIn() {
 
   renderGoogleButton();
   updateAuthUI();
-  if (!isSignedIn()) {
-    window.google.accounts.id.prompt();
-  }
+  maybePromptOneTap();
 }
 
 async function signOut() {
@@ -983,6 +989,7 @@ async function signOut() {
 
 async function initAuth() {
   onAuthStateChanged(firebaseAuth, (user) => {
+    authSettled = true;
     if (user) {
       setCurrentUser({
         id: user.uid,
@@ -992,6 +999,7 @@ async function initAuth() {
       });
     } else {
       setCurrentUser(null);
+      maybePromptOneTap();
     }
   });
 
