@@ -147,6 +147,56 @@ def strip_html(text: str) -> str:
     return text.strip()
 
 
+FRONT_FIELD_NAMES = ["front", "question", "content", "word", "expression", "prompt", "term", "text"]
+BACK_FIELD_NAMES = ["back", "answer", "explanation", "meaning", "definition", "extra", "back extra", "notes"]
+
+
+def _pick_field(names, fieldmap):
+    for name in names:
+        if name in fieldmap:
+            return fieldmap[name]
+    return None
+
+
+def note_to_card(flds, model):
+    """Map an Anki note (list of fields) to a {front, back} card, using the note
+    type's field names and templates. Cloze notes are rendered; image-occlusion
+    notes (which need images) are skipped; other types fall back to a heuristic."""
+    if not flds:
+        return None
+    name = (model or {}).get("name", "").lower()
+    if "occlusion" in name:
+        return None
+    fieldmap = {f["name"].lower(): idx for idx, f in enumerate((model or {}).get("flds", []))}
+    templates = " ".join(t.get("qfmt", "") for t in (model or {}).get("tmpls", []))
+
+    if "cloze" in name or "cloze:" in templates:
+        idx = 0
+        match = re.search(r"\{\{(?:[^}]*:)?cloze:([^}]+)\}\}", templates)
+        if match and match.group(1).strip().lower() in fieldmap:
+            idx = fieldmap[match.group(1).strip().lower()]
+        raw = flds[idx] if idx < len(flds) else flds[0]
+        if CLOZE_RE.search(raw):
+            front = strip_html(cloze_render(raw, reveal=False))
+            back = strip_html(cloze_render(raw, reveal=True))
+            extras = [strip_html(f) for j, f in enumerate(flds) if j != idx and f.strip()]
+            extras = [e for e in extras if e]
+            if extras:
+                back = back + "\n\n" + "\n\n".join(extras)
+            return {"front": front, "back": back} if front and back else None
+        # no cloze markup in this note — fall through to the basic heuristic
+
+    front_idx = _pick_field(FRONT_FIELD_NAMES, fieldmap)
+    back_idx = _pick_field(BACK_FIELD_NAMES, fieldmap)
+    if front_idx is None:
+        front_idx = 0
+    if back_idx is None or back_idx == front_idx:
+        back_idx = 1 if len(flds) >= 2 else None
+    front = strip_html(flds[front_idx]) if front_idx < len(flds) else ""
+    back = strip_html(flds[back_idx]) if back_idx is not None and back_idx < len(flds) else ""
+    return {"front": front, "back": back} if front and back else None
+
+
 def parse_apkg(file_bytes: bytes):
     try:
         zf = zipfile.ZipFile(io.BytesIO(file_bytes))
@@ -170,35 +220,24 @@ def parse_apkg(file_bytes: bytes):
             tmp = handle.name
         conn = sqlite3.connect(tmp)
         conn.row_factory = sqlite3.Row
-        col = conn.execute("SELECT decks FROM col LIMIT 1").fetchone()
+        col = conn.execute("SELECT models, decks FROM col LIMIT 1").fetchone()
+        models = json.loads(col["models"])
 
         deck_name = "Импортированная колода"
         try:
             decks = json.loads(col["decks"])
             named = [d["name"] for d in decks.values() if d.get("name") and d["name"] != "Default"]
             if named:
-                deck_name = named[0]
+                # Anki uses "::" for subdeck hierarchy — show the leaf name.
+                deck_name = named[0].split("::")[-1].strip() or named[0]
         except Exception:  # noqa: BLE001
             pass
 
         cards = []
-        for i, row in enumerate(conn.execute("SELECT flds FROM notes")):
-            flds = row["flds"].split("\x1f")
-            raw = flds[0] if flds else ""
-            if CLOZE_RE.search(raw):
-                # Cloze note: hide the deletion on the front, reveal it on the back.
-                front = strip_html(cloze_render(raw, reveal=False))
-                back = strip_html(cloze_render(raw, reveal=True))
-                extra = strip_html(flds[1]) if len(flds) >= 2 else ""
-                if extra:
-                    back = f"{back}\n\n{extra}"
-            else:
-                front = strip_html(raw)
-                back = strip_html(flds[1]) if len(flds) >= 2 else ""
-                if not back and len(flds) > 2:
-                    back = strip_html(" / ".join(flds[1:]))
-            if front and back:
-                cards.append({"ord": i, "front": front, "back": back})
+        for i, row in enumerate(conn.execute("SELECT flds, mid FROM notes")):
+            card = note_to_card(row["flds"].split("\x1f"), models.get(str(row["mid"])))
+            if card:
+                cards.append({"ord": i, **card})
         conn.close()
         return deck_name, cards
     finally:
